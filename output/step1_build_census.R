@@ -64,7 +64,10 @@ ggplot(summarized_data, aes(x = year, y = total_num_indep)) +
        y = "Total num_indep")
 
 
+################################################################################
+#Step 3 - export
 
+write.csv(census_build1, file = file.path(basedir, "processed/census/census_data_processed.csv"), row.names = FALSE)
 
 
 
