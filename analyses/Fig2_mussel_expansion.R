@@ -2,59 +2,27 @@
 
 rm(list=ls())
 
-
-######
 #required packages
-librarian::shelf(tidyverse)
+librarian::shelf(tidyverse, here)
 
 #set directories 
-basedir <- "/Volumes/seaotterdb$/kelp_recovery/data" 
-gisdir <- file.path(basedir, "gis_data/processed")
-figdir <- here::here("analyses","5community_regulation","figures")
-output <- here::here("analyses","5community_regulation","output")
+localdir <- here::here("output")
+figdir <- here::here("figures")
 
 # Get rocky intertidal position data
-meta_dat <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytilus_pisaster_position_data.xlsx"),sheet = 1)
-mus_pos_raw <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytilus_pisaster_position_data.xlsx"),sheet = 2)
-star_pos_raw <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytilus_pisaster_position_data.xlsx"),sheet = 3)
-
-#read mussel size fq. 
-mus_size_orig <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mussel_size_fq.xlsx"),sheet = 1)
-mus_meta <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mussel_size_fq.xlsx"),sheet = 2)
-
-#read mussel perc cov
-mus_cov_orig <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytilus_cov_pis_den.xlsx"),sheet = 2)
+load(file.path(localdir, "processed/rocky_intertidal/position_data.rdata"))
 
 
 ################################################################################
-#Step 1 - filter to focal study area
+#Step 1 - convert frequency data to long format and calculate mean
 
-mus_pos_build1 <- mus_pos_raw %>% filter(latitude >= 36.47986 & latitude <= 36.64640) %>%
-                    mutate(ssw_period = ifelse(year <=2013, "Before","After")) %>%
-                    #drop asilomar since there is only one year
-                    filter(!(intertidal_sitename %in% c("Asilomar","China Rocks")))
-
-#check
-unique(mus_pos_build1$intertidal_sitename)
-
-
-mus_size_build1 <- mus_size_orig %>% 
-  filter(marine_site_name %in% c("Point Lobos","Hopkins","Stillwater","Point Pinos"))%>%
-  rename(year = marine_common_year)%>%
-  mutate(ssw_period = ifelse(year <=2013, "Before","After")) 
-
+#expand frequency
 DatU <- vcdExtra::expand.dft(mus_size_build1, freq="total")
 
 # Calculate the mean size by ssw_period
 mean_size_by_period <- DatU %>%
   group_by(ssw_period) %>%
   summarize(mean_size = mean(as.numeric(size_bin)))
-
-#calculate avg. perc. cov by period
-mus_cov_period <- mus_cov_orig %>% filter(latitude >= 36.47986 & latitude <= 36.64640) %>%
-  mutate(ssw_period = ifelse(year <=2013, "Before","After")) %>%
-  #drop asilomar since there is only one year
-  filter(!(marine_site_name %in% c("Asilomar","China Rocks"))) 
 
 
 ################################################################################
@@ -219,7 +187,7 @@ n <- gridExtra::grid.arrange(g1_full, m, nrow=2, heights = c(0.65,0.25))
 
 
 
-ggsave(n, filename = file.path(figdir, "Fig2_mussel_expansionv2.png"), 
+ggsave(n, filename = file.path(figdir, "Fig2_mussel_expansion.png"), 
       width = 7, height = 7.5, units = "in", dpi = 600)
 
 
