@@ -36,7 +36,7 @@ heatmap_data <- mus_elev %>%
   group_by(intertidal_sitename, transect, y_planar, ssw_period
            ) %>%
   summarize(
-    MeanZRockHeight = mean(mean_z_rock_height),
+    MeanZRockHeight = mean(mean_z_rock_height, na.rm=TRUE),
     MytilusPresence = as.numeric(any(final_classification == "mytilus californianus"))
   ) %>%
   arrange(intertidal_sitename, transect, y_planar) %>%
