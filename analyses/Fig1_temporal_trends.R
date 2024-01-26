@@ -3,33 +3,31 @@
 
 rm(list=ls())
 
-
-######
 #required packages
 librarian::shelf(tidyverse, sf, zoo)
 
 #set directories 
-basedir <- "/Volumes/seaotterdb$/kelp_recovery/data/"
-censusdir <- file.path(basedir,"census_data/annual_surveys/processed")
-gisdir <- "/Volumes/seaotterdb$/kelp_recovery/data/gis_data"
-figdir <- here::here("analyses","5community_regulation","figures")
+localdir <- here::here("output")
+remdir <- "/Volumes/seaotterdb$/kelp_recovery/data/" #note: this path is to a MBA server
+figdir <- here::here("figures")
 
 #read census data
-census_orig <- st_read(file.path(censusdir, "mpen_counts_1985_23_beta.geojson"))
+census_orig <- read_csv(file.path(localdir, "processed/census/census_data_processed.csv")) 
 
 # Get rocky intertidal data
-meta_dat <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytilus_cov_pis_den.xlsx"),sheet = 1)
-mus_orig <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytilus_cov_pis_den.xlsx"),sheet = 2)
-pis_orig <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytilus_cov_pis_den.xlsx"),sheet = 3)
+load(file.path(localdir, "processed/rocky_intertidal/pisaster_mytilus_processed.rdata"))
 
 #read foraging data
-forage_orig <- read_csv(file.path(basedir,"/foraging_data/processed/foraging_data_2016_2023.csv"))
+forage_orig <- read_csv(file.path(localdir,"processed/foraging_data/foraging_data_2016_2023.csv"))
 
 #read bathy
-bathy_5m <- st_read(file.path(basedir, "gis_data/raw/bathymetry/contours_5m/contours_5m.shp")) %>% filter(CONTOUR == "-5")
+#Note: this file is too large for GitHub and is currently stored on a MBA server. 
+#authorized users can access the server, or the data can be obtained directly from
+#https://geodata.mit.edu/catalog/stanford-pb497kd3664
+bathy_5m <- st_read(file.path(remdir, "gis_data/raw/bathymetry/contours_5m/contours_5m.shp")) %>% filter(CONTOUR == "-5")
 
 #read state
-ca_counties_orig <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
+ca_counties_orig <- st_read(file.path(localdir, "raw/gis_data/ca_county_boundaries/s7vc7n.shp")) 
 
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
@@ -37,45 +35,32 @@ foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclas
 
 
 ################################################################################
-#Step 1 - filter rocky intertidal to focal study area
-
-mus_build1 <- mus_orig %>% filter(latitude >= 36.47986 & latitude <= 36.64640) %>%
-  mutate(ssw_period = ifelse(year <=2013, "before","after")) %>%
-  #drop asilomar since there is only one year
-  filter(!(marine_site_name %in% c("Asilomar","China Rocks"))) 
-
-#check
-unique(mus_build1$marine_site_name)
-
-
-pis_build1 <- pis_orig %>% filter(latitude >= 36.47986 & latitude <= 36.64640) %>%
-  mutate(ssw_period = ifelse(year <=2013, "before","after")) %>%
-  #drop asilomar since there is only one year
-  filter(!(marine_site_name %in% c("Asilomar","China Rocks"))) 
 
 ################################################################################
-#Step 2 - merge
+#Step 1 - prep data summaries 
 
-#otters
+#calculate total number of sea otters for the study area by year
+#the data extent is already filtered to the study area
 census_join_summary <- census_orig %>%
   group_by(year) %>%
-  summarize(total_n_indep = sum(n_indep), total_n_pup = sum(n_pup)) %>% st_drop_geometry() %>%
-  pivot_longer(cols = c(total_n_indep, total_n_pup), 
+  summarize(total_n_indep = sum(n_indep)) %>% 
+  pivot_longer(cols = c(total_n_indep), 
                names_to = "category", 
                values_to = "response")
 
 #mussels
 mus_build2 <- mus_build1 %>% dplyr::select(year, site = marine_site_name, response = percent_cover) %>%
-  #calculate mean
+  #calculate mean percent cover
   group_by(year) %>% summarize(response = mean(response)) %>% mutate(category = "mussels") 
 
 #stars
 pis_build2 <- pis_build1 %>% dplyr::select(year, site = marine_site_name, response = density_per_m2) %>%
-  #calculate mean
+  #calculate mean density
   group_by(year) %>% summarize(response = mean(response)) %>%   mutate(category = "P. ochraceus") 
 
 # Join the data
 combined_data <- bind_rows(census_join_summary, mus_build2, pis_build2) %>%
+                  #assign identifier for the three variables
                   mutate(category = factor(category)) %>%
                   filter(year >=2000)%>%
                   filter(!(category %in% c("total_n_pup"))) %>%
@@ -89,7 +74,7 @@ combined_data <- bind_rows(census_join_summary, mus_build2, pis_build2) %>%
                   )
                   
 ################################################################################
-#Step X - extract mussel dives
+#Step 2 - extract mussel dives from foraging data 
 
 forage_build1 <- forage_orig %>% 
   #filter mussel dives
@@ -327,7 +312,7 @@ p3 <- ggplot(combined_data %>% filter(category == "Total independent otters"), a
   theme(legend.title = element_blank()) +
   theme_bw() +
   base_theme +
-  scale_y_continuous(limits = c(300, NA), oob = scales::squish) +
+  scale_y_continuous(limits = c(200, NA), oob = scales::squish) +
   scale_x_continuous(limits = c(2000, 2023)) +
   scale_color_manual(values = "#2CA02C") + 
   scale_fill_manual(values = "#2CA02C")  +    
@@ -345,7 +330,7 @@ p_final <- gridExtra::grid.arrange(p,g, ncol=2)
 
 
 #save
-ggsave(p_final, filename = file.path(figdir, "Fig1_timeseriesv2.png"), 
+ggsave(p_final, filename = file.path(figdir, "Fig1_temporal_trends.png"), 
        width =7, height = 5.5, units = "in", dpi = 600)
 
 
