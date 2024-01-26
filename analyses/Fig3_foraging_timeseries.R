@@ -4,21 +4,18 @@
 
 rm(list=ls())
 
-
-######
 #required packages
 
 librarian::shelf(tidyverse, sf, raster, terra, janitor)
 
-basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
-figdir <- here::here("analyses","5community_regulation","figures")
+localdir <- here::here("output")
+figdir <- here::here("figures")
 
 
 #read sofa output
-mass_class <- readxl::read_excel(file.path(basedir,"/sofa_data/raw/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 4, skip=1) %>% clean_names()
-dietcomp_class <- readxl::read_excel(file.path(basedir,"/sofa_data/raw/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 5, skip = 1) %>% clean_names()
-kcal_class <- readxl::read_excel(file.path(basedir,"/sofa_data/raw/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 6, skip=1) %>% clean_names()
-
+mass_class <- readxl::read_excel(file.path(localdir,"processed/sofa/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 4, skip=1) %>% clean_names()
+dietcomp_class <- readxl::read_excel(file.path(localdir,"processed/sofa/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 5, skip = 1) %>% clean_names()
+kcal_class <- readxl::read_excel(file.path(localdir,"processed/sofa/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 6, skip=1) %>% clean_names()
 
 
 ################################################################################
@@ -177,7 +174,7 @@ g <- gridExtra::grid.arrange(a,b, ncol=2)
 
 g
 
-ggsave(g, filename = file.path(figdir, "Fig3_foraging_timeseriesv2.png"), 
+ggsave(g, filename = file.path(figdir, "Fig3_foraging_timeseries.png"), 
       width = 7, height = 6, units = "in", dpi = 600, bg = "white")
 
 
