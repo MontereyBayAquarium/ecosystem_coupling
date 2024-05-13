@@ -14,23 +14,33 @@ librarian::shelf(tidyverse,sf, janitor)
 basedir <- here::here("output")
 
 #read data
-census_orig <- read_csv(file.path(basedir,"raw/census_data/ATOS_362-449_modifed_census_results.csv"))
-atos_orig <- st_read(file.path(basedir,"raw/gis_data/atos/ATOS_polygon_teale83.shp"))
+census_orig <- read_csv(file.path(basedir,"raw/census_data/ATOS_362-449_modifed_census_results (1985-2023).csv")) %>% clean_names()
+atos_orig <- st_read(file.path(basedir,"raw/gis_data/atos/ATOS_polygon_teale83.shp"))%>% clean_names()
+atos_df <- load(file.path(basedir, "raw/census_data/ATOS_DF.rdata")) 
 
 
 ################################################################################
 #Step 1 - process ATOS geometries
 
+atos_areas <- ATOS_DF %>% clean_names() %>% rename(
+  atos_id = atos,
+  area_bay = bay,
+  area_near = nearshore,
+  area_off = offshore,
+  area_wayoff = wayoffsh
+)
+
 atos_build1 <- atos_orig %>%
                #merge offshore / onshore geometrues
-               group_by(ATOS_ID) %>%
+               group_by(atos_id) %>%
                summarize(geometry = st_union(geometry))%>%
                mutate(area_m2 = st_area(geometry),
                       area_km2 = area_m2 / 1e6,
                       #format
                       area_km2 = as.numeric(sprintf("%.7f", area_km2))
                       ) %>%
-                clean_names()
+                clean_names() %>%
+              left_join(atos_areas, by = "atos_id")
 
 
 ################################################################################
@@ -38,7 +48,7 @@ atos_build1 <- atos_orig %>%
 
 census_build1 <- census_orig %>%
                   #drop index column
-                  select(-`...1`) %>%
+                  #select(-`...1`) %>%
                   clean_names() %>%
                   select(-yr) %>%
                   rename(atos_id = atos)%>%
@@ -46,18 +56,29 @@ census_build1 <- census_orig %>%
                   left_join(atos_build1, by = "atos_id", relationship = "many-to-many") %>%
                   select(-geometry, -trend5yr)%>%
                   #convert density estimates to counts
-                  mutate(n_indep = lin_dens*area_km2,
-                         n_pup = n_indep*pupratio,
-                         #set fields
+                  mutate(total_counts = ((dns_bay * area_bay) + (dns_near * area_near)+
+                           (dns_off * area_off) + (dns_wayoff * area_wayoff)),
+                         pup_counts = total_counts * pupratio,
+                         n_indep = total_counts - pup_counts,
                          atos_id = as.character(atos_id),
                          area_m2 = as.character(area_m2)
-                         ) 
+                         )
+  
+########OLD               
+#convert density estimates to counts
+#                  mutate(n_indep = lin_dens*area_km2,
+ #                        n_pup = n_indep*pupratio,
+  #                       #set fields
+   #                      atos_id = as.character(atos_id),
+    #                     area_m2 = as.character(area_m2)
+     #                    ) 
 
 #check trends to see if the numbers make sense
 
 summarized_data <- census_build1 %>%
   group_by(year) %>%
-  summarize(total_n_indep = sum(n_indep))
+  summarize(total_n_indep = sum(n_indep),
+            total_pup = sum(pup_counts))
 
 base_theme <-  theme(axis.text=element_text(size=10, color = "black"),
                      axis.title=element_text(size=10,color = "black"),
@@ -80,17 +101,22 @@ base_theme <-  theme(axis.text=element_text(size=10, color = "black"),
                      strip.text = element_text(size=10, face = "bold",color = "black", hjust=0),
                      strip.background = element_blank())
 
-# Plotting the summarized data
-g <- ggplot(summarized_data, aes(x = year, y = total_n_indep)) +
-  geom_line() +
-  geom_point() +
+g <- ggplot(summarized_data, aes(x = year)) +
+  geom_line(aes(y = total_n_indep, color = "Independents")) +
+  geom_point(aes(y = total_n_indep, color = "Independents")) +
+  geom_line(aes(y = total_pup, color = "Pups")) +
+  geom_point(aes(y = total_pup, color = "Pups")) +
   labs(title = "",
        x = "Year",
-       y = "No. independents")+
-  theme_bw() + base_theme
+       y = "Counts along the Monterey Peninsula")+
+  theme_bw() + base_theme +
+  scale_color_manual(values = c(Independents = "forestgreen", Pups = "orange"))
 
-#ggsave(g, file = file.path("/Users/jossmith/Downloads/indep_plot.png"), width = 6,
- #      height = 5, units = "in")
+g
+
+
+ggsave(g, file = file.path("/Users/jossmith/Downloads/indep_plot.png"), width = 6,
+       height = 5, units = "in")
 
 ################################################################################
 #Step 3 - export
