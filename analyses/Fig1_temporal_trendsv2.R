@@ -402,6 +402,6 @@ p_final <- gridExtra::grid.arrange(p,g0, ncol=2)
 
 #save
 ggsave(p_final, filename = file.path(figdir, "Fig1_temporal_trendsv2.png"), 
-       width =7, height = 5.5, units = "in", dpi = 600)
+       width =7, height = 5.5, units = "in", dpi = 600, bg = "white")
 
 
