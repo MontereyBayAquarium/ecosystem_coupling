@@ -56,24 +56,15 @@ census_build1 <- census_orig %>%
                   left_join(atos_build1, by = "atos_id", relationship = "many-to-many") %>%
                   select(-geometry, -trend5yr)%>%
                   #convert density estimates to counts
-                  mutate(total_counts = ((dns_bay * area_bay) + (dns_near * area_near)+
-                           (dns_off * area_off) + (dns_wayoff * area_wayoff)),
-                         pup_counts = total_counts * pupratio,
-                         n_indep = total_counts - pup_counts,
-                         atos_id = as.character(atos_id),
-                         area_m2 = as.character(area_m2)
-                         )
-  
-########OLD               
-#convert density estimates to counts
-#                  mutate(n_indep = lin_dens*area_km2,
- #                        n_pup = n_indep*pupratio,
-  #                       #set fields
-   #                      atos_id = as.character(atos_id),
-    #                     area_m2 = as.character(area_m2)
-     #                    ) 
+                    mutate(total_counts = ((dns_bay * area_bay) + (dns_near * area_near) +
+                                             (dns_off * area_off) + (dns_wayoff * area_wayoff)), #calculate total counts
+                           pup_prop = pupratio/(1+pupratio), #convert pup:indep ratio into a proportion of pups out of the total
+                           pup_counts = total_counts * pup_prop, #determine pup counts
+                           n_indep = total_counts - pup_counts, #calculate number of independents
+                           atos_id = as.character(atos_id),
+                           area_m2 = as.character(area_m2)
+                    )
 
-#check trends to see if the numbers make sense
 
 summarized_data <- census_build1 %>%
   group_by(year) %>%
