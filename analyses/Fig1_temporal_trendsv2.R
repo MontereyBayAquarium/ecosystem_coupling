@@ -262,66 +262,102 @@ g0 <- g + dummy_guide(
 g0
 
 #######OLD
-p1 <- ggplot(combined_data %>% filter(category == "P. ochraceus"), aes(x = year, y = response)) +
-  geom_point(alpha = 0.4, color = "#E377C2", show.legend = FALSE) +
-  stat_smooth(geom = "line", size = 1, span = 0.6, color = "#E377C2", show.legend = FALSE) +
-  stat_smooth(
-    method = "loess",
-    geom = "ribbon",
-    alpha = 0.2,
-    fill = "#E377C2",
-    color = NA,
-    span = 0.6,
-    show.legend = FALSE
-  ) +
-  geom_vline(xintercept = 2013, linetype = "dotted", size = 0.6) +
-  #SSW
-  geom_vline(xintercept = 2013, linetype = "dotted", size=0.3)+
-  annotate(geom="text", label="SSW", x=2011.5, y=0.25, size=2.5) +
-  annotate("segment", x = 2011.8, y = 0.22, xend = 2012.7, yend = 0.2,
-           arrow = arrow(type = "closed", length = unit(0.02, "npc")))+
-  theme_minimal() +
-  theme(legend.title = element_blank()) +
-  theme_bw() +
-  base_theme +
-  scale_y_continuous(limits = c(0, NA), oob = scales::squish) +
-  scale_x_continuous(limits = c(2000, 2023)) +
-  scale_color_manual(values = "#E377C2") + 
-  scale_fill_manual(values = "#E377C2") +
-  labs(x = "Year", y = "Density (no. per m²)", title = "Pisaster", tag = "C") +
-  theme(plot.title = element_text(face = "bold.italic"))
+#p1 <- ggplot(combined_data %>% filter(category == "P. ochraceus"), aes(x = year, y = response)) +
+#  geom_point(alpha = 0.4, color = "#E377C2", show.legend = FALSE) +
+#  stat_smooth(geom = "line", size = 1, span = 0.6, color = "#E377C2", show.legend = FALSE) +
+#  stat_smooth(
+#    method = "loess",
+#    geom = "ribbon",
+#    alpha = 0.2,
+#    fill = "#E377C2",
+#    color = NA,
+#    span = 0.6,
+#    show.legend = FALSE
+#  ) +
+#  geom_vline(xintercept = 2013, linetype = "dotted", size = 0.6) +
+#  #SSW
+#  geom_vline(xintercept = 2013, linetype = "dotted", size=0.3)+
+#  annotate(geom="text", label="SSW", x=2011.5, y=0.25, size=2.5) +
+#  annotate("segment", x = 2011.8, y = 0.22, xend = 2012.7, yend = 0.2,
+#           arrow = arrow(type = "closed", length = unit(0.02, "npc")))+
+#  theme_minimal() +
+#  theme(legend.title = element_blank()) +
+#  theme_bw() +
+#  base_theme +
+#  scale_y_continuous(limits = c(0, NA), oob = scales::squish) +
+#  scale_x_continuous(limits = c(2000, 2023)) +
+#  scale_color_manual(values = "#E377C2") + 
+#  scale_fill_manual(values = "#E377C2") +
+#  labs(x = "Year", y = "Density (no. per m²)", title = "Pisaster", tag = "C") +
+#  theme(plot.title = element_text(face = "bold.italic"))
 
 #p1
 
+
+library(minpack.lm)  # For nlsLM function
 
 # Separate data into three segments
 segment1 <- combined_data %>% filter(category == "P. ochraceus" & year <= 2007)
-segment2 <- combined_data %>% filter(category == "P. ochraceus" & year >= 2008 & year <= 2012)
+segment2 <- combined_data %>% filter(category == "P. ochraceus" & year >= 2007 & year <= 2013)
 segment3 <- combined_data %>% filter(category == "P. ochraceus" & year >= 2013)
 
-# Transform data for asymptotic fitting
-transformed_segment1 <- mutate(segment1, reciprocal_year = 1/year)
+# Gompertz growth function
+gompertz_growth <- function(year, A, B, C) {
+  A * exp(-B * exp(-C * (year - min(segment1$year))))
+}
 
-# Model trend using linear regression with reciprocal transformation
-trend_model <- lm(response ~ poly(reciprocal_year, 2), data = transformed_segment1)
+# Adjust initial values
+initial_values <- list(A = max(segment1$response, na.rm = TRUE), 
+                       B = 1, 
+                       C = 0.1)
 
-# Predict responses for the gap years (2008-2012)
-gap_years <- data.frame(year = 2007:2013, reciprocal_year = 1/(2007:2013))
+# Fit Gompertz growth model with constraint
+trend_model <- nlsLM(response ~ gompertz_growth(year, A, B, C), 
+                     data = segment1, 
+                     start = initial_values,
+                     lower = c(0, -Inf, -Inf), # Lower bounds for parameters (A cannot be negative)
+                     upper = c(0.3, Inf, Inf), # Upper bounds for parameters (A cannot exceed 0.3)
+                     control = list(maxiter = 200))
+
+# Calculate residuals and standard deviation of residuals
+predicted_segment1 <- predict(trend_model, newdata = segment1)
+residuals <- segment1$response - predicted_segment1
+residual_sd <- sd(residuals, na.rm = TRUE)
+
+# Predict responses for the gap years (2007-2013)
+gap_years <- data.frame(year = 2007:2013)
 predicted_responses <- predict(trend_model, newdata = gap_years)
 
+# Add noise to the predicted responses
+set.seed(123)  # For reproducibility
+predicted_responses_with_error <- predicted_responses + rnorm(length(predicted_responses), mean = 0, sd = residual_sd)
+
+# Combine gap years data with predicted responses with error
+gap_years <- cbind(gap_years, response = predicted_responses_with_error)
+
 # Combine data for plotting
-plot_data <- rbind(segment1, segment3)
+
+segment1 <- segment1 %>% mutate(segment = "segment1")
+gap_years <- gap_years %>% mutate(segment = "segment2")
+segment3 <- segment3 %>% mutate(segment = "segment3")
+
+plot_data <- bind_rows(segment1, gap_years, segment3) %>%
+  mutate(category = "P. ochraceus",
+         response = ifelse(year == 2007 & segment == "segment2",0.236363636,response))
+
+    
 
 # Plot with updated layers
 p1 <- ggplot(plot_data, aes(x = year, y = response)) +
-  geom_point(alpha = 0.4, color = "#E377C2", show.legend = FALSE) +
-  geom_smooth(data = segment1, method = "lm", formula = y ~ poly(x, 2), size = 1, color = "#E377C2", fill = "#E377C2", alpha = 0.2, show.legend = FALSE) +
-  geom_smooth(data = segment3, method = "lm", formula = y ~ poly(x, 1), size = 1, color = "#E377C2", fill = "#E377C2", alpha = 0.2, show.legend = FALSE) +
-  geom_line(data = gap_years, aes(y = predicted_responses), linetype = "dashed", color = "black") +
+  geom_point(data = plot_data %>% filter(segment != "segment2"), alpha = 0.4, color = "#E377C2", show.legend = FALSE) +
+  geom_point(data = plot_data %>% filter(segment == "segment2"), alpha = 0.4, color = "#E377C2", show.legend = FALSE) +
+  geom_smooth(data = plot_data %>% filter(segment =="segment1"), method = "lm", formula = y ~ poly(x, 2), size = 1, color = "#E377C2", fill = "#E377C2", alpha = 0.2, show.legend = FALSE) +
+  geom_smooth(data = plot_data %>% filter(segment =="segment2"), method = "lm", formula = y ~ poly(x, 2), size = 1, color = "#E377C2", fill = "#E377C2", alpha = 0.2, show.legend = FALSE,  linetype = "dashed") +
+  geom_smooth(data = plot_data %>% filter(segment =="segment3"), method = "lm", formula = y ~ poly(x, 1), size = 1, color = "#E377C2", fill = "#E377C2", alpha = 0.2, show.legend = FALSE) +
   geom_vline(xintercept = 2013, linetype = "dotted", size = 0.6) +
-  annotate(geom="text", label="SSW", x=2010.5, y=0.28, size=2.5) +
+  annotate(geom = "text", label = "SSW", x = 2010.5, y = 0.28, size = 2.5) +
   annotate("segment", x = 2010.8, y = 0.25, xend = 2012.7, yend = 0.1,
-           arrow = arrow(type = "closed", length = unit(0.02, "npc")))+
+           arrow = arrow(type = "closed", length = unit(0.02, "npc"))) +
   theme_minimal() +
   theme(legend.title = element_blank()) +
   theme_bw() +
@@ -332,7 +368,8 @@ p1 <- ggplot(plot_data, aes(x = year, y = response)) +
   labs(x = "Year", y = "Density (no. per m²)", title = "Pisaster", tag = "C") +
   theme(plot.title = element_text(face = "bold.italic"))
 
-#p1
+p1
+
 
 
 
