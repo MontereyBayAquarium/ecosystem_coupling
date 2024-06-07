@@ -10,7 +10,7 @@ localdir <- here::here("output")
 figdir <- here::here("figures")
 
 # Get rocky intertidal position data
-load(file.path(localdir, "processed/rocky_intertidal/position_data.rdata"))
+load(file.path(localdir, "processed/rocky_intertidal/position_datav2.rdata"))
 
 
 ################################################################################
