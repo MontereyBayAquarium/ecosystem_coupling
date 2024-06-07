@@ -29,10 +29,10 @@ mean_size_by_period <- DatU %>%
 #plot heatmap by site
 
 
-tile_theme <-  theme(axis.text=element_text(size=6, color = "black"),
-                     axis.title=element_text(size=7,color = "black"),
-                     plot.tag=element_text(size=7,color = "black"),
-                     plot.title=element_text(size=7,color = "black", face = "bold"),
+tile_theme <-  theme(axis.text=element_text(size=7, color = "black"),
+                     axis.title=element_text(size=8,color = "black"),
+                     plot.tag=element_text(size=8,color = "black"),
+                     plot.title=element_text(size=8,color = "black", face = "bold"),
                      # Gridlines
                      panel.grid.major = element_blank(), 
                      panel.grid.minor = element_blank(),
@@ -47,7 +47,7 @@ tile_theme <-  theme(axis.text=element_text(size=6, color = "black"),
                      #legend.key.height = unit(0.1, "cm"),
                      legend.background = element_rect(fill=alpha('blue', 0)),
                      #facets
-                     strip.text = element_text(size=6, face = "bold",color = "black", hjust=0),
+                     strip.text = element_text(size=7, face = "bold",color = "black", hjust=0),
                      strip.background = element_blank())
 
 # Calculate the range of points for each site across all years and identify points unique to 'after'
@@ -118,10 +118,10 @@ g1_full
 
 
 # Theme
-my_theme <-  theme(axis.text=element_text(size=6,color = "black"),
-                   axis.title=element_text(size=6,color = "black"),
-                   plot.tag=element_text(size=7,color = "black"),
-                   plot.title=element_text(size=7,color = "black", face = "bold"),
+my_theme <-  theme(axis.text=element_text(size=8,color = "black"),
+                   axis.title=element_text(size=9,color = "black"),
+                   plot.tag=element_text(size=8,color = "black"),
+                   plot.title=element_text(size=8,color = "black", face = "bold"),
                    # Gridlines
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -131,19 +131,19 @@ my_theme <-  theme(axis.text=element_text(size=6,color = "black"),
                    legend.key.size = unit(0.3, "cm"), 
                    #legend.key = element_rect(fill = "white"), # Set it to transparent
                    legend.spacing.y = unit(0.1, "cm"),  
-                   legend.text=element_text(size=6,color = "black"),
+                   legend.text=element_text(size=7,color = "black"),
                    legend.title=element_blank(),
                    #legend.key.height = unit(0.1, "cm"),
                    #legend.background = element_rect(fill=alpha('blue', 0)),
                    #facets
-                   strip.text = element_text(size=6, face = "bold",color = "black", hjust=0),
+                   strip.text = element_text(size=7, face = "bold",color = "black", hjust=0),
                    strip.background = element_blank())
 
 # Create a KDE plot for the mean size frequency distribution and overlay them
 g2 <- ggplot(DatU, aes(x = as.numeric(size_bin), fill = ssw_period, color = ssw_period)) +
   geom_density(alpha = 0.8, adjust = 1.5) +
-  labs(x = "Size (mm)", y = "Frequency", title = "Size frequency", tag = "C") +
-  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 120, by = 10)) +
+  labs(x = "Size \n(mm)", y = "Frequency", title = "Size frequency", tag = "C") +
+  scale_x_continuous(limits = c(0, 100), breaks = seq(0, 120, by = 20)) +
   scale_fill_manual(values=c("indianred","navyblue"))+
   scale_color_manual(values=c("indianred","navyblue"))+
   #geom_vline(data = mean_size_by_period, aes(xintercept = mean_size, color = ssw_period), 
@@ -156,7 +156,7 @@ g2
 # Create a KDE plot for the mean size frequency distribution and overlay them
 g3 <- ggplot(mus_cov_period, aes(x = as.numeric(percent_cover), fill = ssw_period, color = ssw_period)) +
   geom_density(alpha = 0.8, adjust = 1.5) +
-  labs(x = "Percent cover", y = "Frequency", title = "Percent cover", tag = "D") +
+  labs(x = "Percent \ncover", y = "Frequency", title = "Percent cover", tag = "D") +
   scale_x_continuous(limits = c(0, 70), breaks = seq(0, 70, by = 10)) +
   scale_fill_manual(values=c("indianred","navyblue"))+
   scale_color_manual(values=c("indianred","navyblue"))+
@@ -170,7 +170,7 @@ g3
 # Create a KDE plot for the mean size frequency distribution and overlay them
 g4 <- ggplot(mus_pos_build1, aes(x = as.numeric(location), fill = ssw_period, color = ssw_period)) +
   geom_density(alpha = 0.8, adjust = 1.5) +
-  labs(x = "Mussel depth (distance high to low intertidal)", y = "Frequency", title = "Depth distribution", tag = "B") +
+  labs(x = "Mussel depth \n(distance high to low intertidal)", y = "Frequency", title = "Depth distribution", tag = "B") +
   scale_x_continuous(limits = c(0, 30), breaks = seq(0, 30, by = 10)) +
   scale_fill_manual(values=c("indianred","navyblue"))+
   scale_color_manual(values=c("indianred","navyblue"))+
@@ -187,7 +187,7 @@ n <- gridExtra::grid.arrange(g1_full, m, nrow=2, heights = c(0.65,0.25))
 
 
 
-ggsave(n, filename = file.path(figdir, "Fig2_mussel_expansion.png"), 
+ggsave(n, filename = file.path(figdir, "Fig2_mussel_expansion2.png"), 
       width = 7, height = 7.5, units = "in", dpi = 600)
 
 
