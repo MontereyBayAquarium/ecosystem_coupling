@@ -12,6 +12,22 @@ figdir <- here::here("figures")
 # Get rocky intertidal position data
 load(file.path(localdir, "processed/rocky_intertidal/position_datav2.rdata"))
 
+# Calculate the range of points for each site across all years and identify points unique to 'after'
+#We use !any(ssw_period == "before") to check if there are no rows with 'ssw_period'
+#equal to "before" within each group of 'intertidal_sitename,' 'transect,' and 'location.' 
+#If there are no such rows, it means the points are unique to the 'after' period, and we label them as "Only After."
+
+heatmap_data <- mus_pos_build1 %>%
+  group_by(intertidal_sitename, transect, location) %>%
+  summarize(
+    Period = factor(!any(ssw_period == "Before"), levels = c(TRUE, FALSE), labels = c("Post-SSW", "Pre-SSW"))
+  ) %>%
+  arrange(intertidal_sitename, transect) %>%
+  group_by(intertidal_sitename) %>%
+  mutate(transect_seq = dense_rank(transect),
+         intertidal_sitename = factor(intertidal_sitename,levels = c("Hopkins","Point Pinos","Stillwater","Point Lobos")),
+         Period = factor(Period, levels = c("Pre-SSW","Post-SSW")))
+
 
 ################################################################################
 #Step 1 - convert frequency data to long format and calculate mean
@@ -23,6 +39,67 @@ DatU <- vcdExtra::expand.dft(mus_size_build1, freq="total")
 mean_size_by_period <- DatU %>%
   group_by(ssw_period) %>%
   summarize(mean_size = mean(as.numeric(size_bin)))
+
+################################################################################
+#Step 2 - test for significant change in mussel depth distribtion
+
+
+depth_values <- heatmap_data %>%
+  group_by(Period) %>%
+  summarise(mean_depth = mean(location, na.rm = TRUE),
+            depth_sd = sd(location, na.rm = TRUE))
+
+print(depth_values)
+
+# Filter data for Pre-SSW and Post-SSW periods
+pre_ssw <- heatmap_data %>% filter(Period == "Pre-SSW") %>% pull(location)
+post_ssw <- heatmap_data %>% filter(Period == "Post-SSW") %>% pull(location)
+
+# t-test
+t_test_result <- t.test(pre_ssw, post_ssw)
+
+print(t_test_result)
+
+################################################################################
+#Step 3 - test for significant change in mussel size
+
+size_values <- DatU %>%
+  group_by(ssw_period) %>%
+  summarise(mean_size = mean(size_bin, na.rm = TRUE),
+            size_sd = sd(size_bin, na.rm = TRUE))
+
+print(size_values)
+
+# Filter data for Pre-SSW and Post-SSW periods
+pre_ssw <- DatU %>% filter(ssw_period == "Before") %>% pull(size_bin)
+post_ssw <- DatU %>% filter(ssw_period == "After") %>% pull(size_bin)
+
+# t-test
+t_test_result <- t.test(pre_ssw, post_ssw)
+
+print(t_test_result)
+
+
+################################################################################
+#Step 4 - test for significant change in mussel cover
+
+
+cov_values <- mus_cov_period %>%
+  group_by(ssw_period) %>%
+  summarise(mean_cov = mean(percent_cover, na.rm = TRUE),
+            cov_sd = sd(percent_cover, na.rm = TRUE))
+
+print(cov_values)
+
+# Filter data for Pre-SSW and Post-SSW periods
+pre_ssw <- mus_cov_period %>% filter(ssw_period == "Before") %>% pull(percent_cover)
+post_ssw <- mus_cov_period %>% filter(ssw_period == "After") %>% pull(percent_cover)
+
+# t-test
+t_test_result <- t.test(pre_ssw, post_ssw)
+
+print(t_test_result)
+
 
 
 ################################################################################
@@ -49,23 +126,6 @@ tile_theme <-  theme(axis.text=element_text(size=7, color = "black"),
                      #facets
                      strip.text = element_text(size=7, face = "bold",color = "black", hjust=0),
                      strip.background = element_blank())
-
-# Calculate the range of points for each site across all years and identify points unique to 'after'
-#We use !any(ssw_period == "before") to check if there are no rows with 'ssw_period'
-#equal to "before" within each group of 'intertidal_sitename,' 'transect,' and 'location.' 
-#If there are no such rows, it means the points are unique to the 'after' period, and we label them as "Only After."
-
-heatmap_data <- mus_pos_build1 %>%
-  group_by(intertidal_sitename, transect, location) %>%
-  summarize(
-    location_range = max(location) - min(location),
-    Period = factor(!any(ssw_period == "Before"), levels = c(TRUE, FALSE), labels = c("Post-SSW", "Pre-SSW"))
-  ) %>%
-  arrange(intertidal_sitename, transect) %>%
-  group_by(intertidal_sitename) %>%
-  mutate(transect_seq = dense_rank(transect),
-         intertidal_sitename = factor(intertidal_sitename,levels = c("Hopkins","Point Pinos","Stillwater","Point Lobos")),
-         Period = factor(Period, levels = c("Pre-SSW","Post-SSW")))
 
 
 # Create a heatmap with equal tile size and color points observed only in 'after' differently
@@ -189,6 +249,87 @@ n <- gridExtra::grid.arrange(g1_full, m, nrow=2, heights = c(0.65,0.25))
 
 ggsave(n, filename = file.path(figdir, "Fig2_mussel_expansion2.png"), 
       width = 7, height = 7.5, units = "in", dpi = 600)
+
+
+################################################################################
+#plot boxplot of mussel distribution
+
+base_theme <-  theme(axis.text=element_text(size=11, color = "black"),
+                     axis.title=element_text(size=12,color = "black"),
+                     plot.tag=element_text(size=9,color = "black"),
+                     plot.title=element_text(size=10,color = "black", face = "bold"),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key.size = unit(0.5, "cm"), 
+                     #legend.key = element_rect(fill = "white"), # Set it to transparent
+                     legend.spacing.y = unit(0.5, "cm"),  
+                     legend.text=element_text(size=10,color = "black"),
+                     legend.title=element_blank(),
+                     #legend.key.height = unit(0.1, "cm"),
+                     #legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=10, face = "bold",color = "black", hjust=0),
+                     strip.background = element_blank())
+
+
+# plot depth distribution
+s1 <- ggplot(heatmap_data, aes(x = Period, y = location, fill = Period)) +
+  geom_boxplot(show.legend = FALSE) +
+  scale_fill_manual(values = c("Pre-SSW" = "navyblue", "Post-SSW" = "indianred")) +
+  labs(title = "",
+       x = "Period",
+       y = "Distance (meters from high intertidal)",
+       fill = "Period",
+       tag = "A") +
+  theme_minimal() +
+  ggsignif::geom_signif(comparisons = list(c("Pre-SSW", "Post-SSW")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=5)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "none") +
+  theme_bw() + base_theme
+
+# plot size
+s2 <- ggplot(DatU %>%
+               rename(Period = ssw_period) %>%
+               mutate(Period = factor(Period, 
+                                      levels = c("Before", "After"), 
+                                      labels = c("Pre-SSW", "Post-SSW"))), 
+             aes(x = Period, y = size_bin, fill = Period)) +
+  geom_boxplot(show.legend = FALSE) +
+  scale_fill_manual(values = c("Pre-SSW" = "navyblue", "Post-SSW" = "indianred")) +
+  labs(title = "",
+       x = "Period",
+       y = "Mussel size (mm)",
+       fill = "Period",
+       tag = "B") +
+  theme_minimal() +
+  ggsignif::geom_signif(comparisons = list(c("Pre-SSW", "Post-SSW")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "none") +
+  theme_bw() + base_theme
+
+s2
+
+s <- ggpubr::ggarrange(s1, s2, nrow=1)
+
+ggsave(s, filename = file.path(figdir, "FigS1_mussel_boxplots.png"), 
+       width =7, height = 5, units = "in", dpi = 600, bg = "white")
+
+
+
+
+
+
+
 
 
 
