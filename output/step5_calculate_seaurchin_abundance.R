@@ -18,7 +18,7 @@ librarian::shelf(tidyverse, here)
 ################################################################################
 #set directories and load data
 basedir <- here::here("output","raw","urchin_data")
-output <- here::here("output","processed","urchin_data")
+output <- here::here("output","processed","annual_urc_mus_data")
 
 kelp_swath_raw <- read.csv(file.path(basedir, "MLPA_kelpforest_swath.6.csv")) %>%
   janitor::clean_names()
@@ -167,7 +167,7 @@ ggplot(mus_build, aes(x = year, y = mean_cov)) +
 
 #write_csv(kelp_swath_build8, file = file.path(output, "urchin_site_level_abundances.csv")) #last write 01 August 2024
 write_csv(kelp_swath_build9, file = file.path(output, "urchin_annual_density.csv")) #last write 09 August 2024
-write_csv(mus_build, file = file.path(output, "mus_annual_cov.csv"))
+write_csv(mus_build, file = file.path(output, "mus_annual_cov.csv")) #last write 09 August 2024
 
 
 
