@@ -34,8 +34,11 @@ site_table <- read.csv(file.path(basedir, "MLPA_kelpforest_site_table.6.csv")) %
                 baseline_region)%>%
   distinct() #remove duplicates
 
+mus_dat <- load(file = file.path("output/processed/rocky_intertidal/pisaster_mytilus_processed.rdata"))
+
+
 ################################################################################
-#process kelp swath
+#process urchin data
 
 #select vars and clean
 kelp_swath_build1 <- kelp_swath_raw %>%
@@ -100,35 +103,56 @@ kelp_swath_build8 <- kelp_swath_build7 %>%
                      #calcualte density
                      mutate(density_m2 = counts / 60) %>%
                      group_by(year, baseline_region, site, species) %>%
-                     dplyr::summarize(site_counts_total = sum(counts),
-                               density_60m2_mean = mean(counts),
-                               density_60m2_sd = sd(counts),
-                               density_m2_mean = mean(density_m2),
-                               density_m2_sd = sd(density_m2)) %>%
+                     dplyr::summarize(
+                               density_m2_mean = mean(density_m2, na.rm = TRUE),
+                               #density_m2_sd = sd(density_m2, na.rm = TRUE)
+                               ) %>%
                      #drop 1999
                      filter(year > 1999)
 
 ################################################################################
-#aggregate data to annual means
+#aggregate data to annual means with sd calculate among sites
 
-kelp_swath_build9 <- kelp_swath_build7 %>%
+kelp_swath_build9 <- kelp_swath_build8 %>%
   #calcualte density
-  mutate(density_m2 = counts / 60) %>%
   group_by(year, baseline_region, species) %>%
-  dplyr::summarize(site_counts_total = sum(counts),
-                   density_60m2_mean = mean(counts),
-                   density_60m2_sd = sd(counts),
-                   density_m2_mean = mean(density_m2),
-                   density_m2_sd = sd(density_m2)) %>%
+  dplyr::summarize(mean_density_m2 = mean(density_m2_mean, na.rm = TRUE),
+                   sd_density_m2 = sd(density_m2_mean, na.rm=TRUE)) %>%
   #drop 1999
-  filter(year > 1999)
+  filter(year > 1999) %>%
+  data.frame()%>%
+  dplyr::select(-baseline_region)
 
 ################################################################################
 #check trends
 
-ggplot(kelp_swath_build9, aes(x = year, y = density_m2_mean, color = species, group = species)) +
+ggplot(kelp_swath_build9, aes(x = year, y = mean_density_m2, color = species, group = species)) +
   geom_point() +
-  geom_errorbar(aes(ymin = density_m2_mean - density_m2_sd, ymax = density_m2_mean + density_m2_sd), width = 0.2) +
+  geom_errorbar(aes(ymin = mean_density_m2 - sd_density_m2, ymax = mean_density_m2 + sd_density_m2), width = 0.2) +
+  geom_line() +
+  labs(
+    title = "Overall Mean Density Across All Sites for Each Year by Species",
+    x = "Year",
+    y = "Mean Density (m^2)",
+    color = "Species"
+  ) +
+  theme_minimal()
+
+################################################################################
+#process mussel data
+
+mus_build <- mus_build1 %>%
+              data.frame()%>%
+              group_by(year, species = species_lump) %>%
+              summarize(mean_cov = mean(percent_cover, na.rm=TRUE),
+                        sd_cov = sd(percent_cover, na.rm=TRUE))
+
+################################################################################
+#check trends
+
+ggplot(mus_build, aes(x = year, y = mean_cov)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = mean_cov - sd_cov, ymax = mean_cov + sd_cov), width = 0.2) +
   geom_line() +
   labs(
     title = "Overall Mean Density Across All Sites for Each Year by Species",
@@ -141,9 +165,9 @@ ggplot(kelp_swath_build9, aes(x = year, y = density_m2_mean, color = species, gr
 ################################################################################
 #export summarized data
 
-write_csv(kelp_swath_build8, file = file.path(output, "urchin_site_level_abundances.csv")) #last write 01 August 2024
-write_csv(kelp_swath_build9, file = file.path(output, "urchin_annual_abundances.csv")) #last write 01 August 2024
-
+#write_csv(kelp_swath_build8, file = file.path(output, "urchin_site_level_abundances.csv")) #last write 01 August 2024
+write_csv(kelp_swath_build9, file = file.path(output, "urchin_annual_density.csv")) #last write 09 August 2024
+write_csv(mus_build, file = file.path(output, "mus_annual_cov.csv"))
 
 
 
