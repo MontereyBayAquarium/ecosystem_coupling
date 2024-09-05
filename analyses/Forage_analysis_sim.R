@@ -2,29 +2,32 @@
 
 rm(list=ls())
 
+################################################################################
+#Prep workspace
+
 #install.packages("dirichlet", repos="http://R-Forge.R-project.org")
 librarian::shelf(dplyr, gtools, ggplot2, dirichlet, here, googledrive)
 
 rstan::rstan_options(javascript=FALSE)
 
-# set dir ----------------------------------------------
+################################################################################
+#Set directories and load data
 datin <- here::here("output","processed")
-
-# Load data ----------------------------------------------
+figdir <- here::here("figures")
 
 # Define the Google Drive file ID for sofa output
+# This file exceeds 100MB GitHub limit so is stored externally
 file_id <- "1yC8yrS69uOqbvlzQJakL0z-DC-yMhNel"
 
 temp_file <- tempfile(fileext = ".rdata")
 drive_download(as_id(file_id), path = temp_file, overwrite = TRUE)
 SOFA_rslts <- mget(load(temp_file))
 
-
 df_mus = read.csv(file.path(datin, "annual_urc_mus_data/mus_annual_cov.csv"))
 df_urc = read.csv(file.path(datin, "annual_urc_mus_data/urchin_annual_density.csv"))
 
-# Process data -------------------------------------------
-#
+################################################################################
+#Process data
 df_urc$sp = NA #character(length = nrow(df_urc))
 df_urc$sp[df_urc$species=="Strongylocentrotus purpuratus"] = "pur"
 df_urc$sp[is.na( df_urc$sp)] = "red"
@@ -51,7 +54,9 @@ K = SOFA_rslts$Nptps
 dfPtp = SOFA_rslts$dfPtp
 ii = which(startsWith(vn,"ER["))
 E_pr = as.matrix(mcmc[,ii])
-# Simulations ----------------------------------------------------------
+################################################################################
+#Run simulations
+
 # Assume constant E intake per prey type
 # Use moving average to smooth eta... 3-year MAvg span?  
 # Alternative scenario... eta for urc and mus after yr 6 are avg of years 1:6,
@@ -167,7 +172,85 @@ plt_effort = ggplot(data = df_diet[ii,],aes(x=Year,group=Prey_type)) +
   geom_ribbon(aes(ymin=eta_lo,ymax=eta_hi,fill=Prey_type),alpha=0.25) +
   geom_line(aes(y=eta, color=Prey_type)) +
   labs(x = "Year", y = "Proportion of foraging effort") +
-  theme_classic() + theme(legend.position = "inside",legend.position.inside = c(.1,.8)) +
+  theme_classic() + #theme(legend.position = "inside") +
   scale_x_continuous(breaks = as.integer(Years),
                      guide = guide_axis(angle = 45))
 print(plt_effort)
+
+################################################################################
+#plot Figure 5 with matched theme
+
+
+base_theme <-  theme(axis.text=element_text(size=8, color = "black"),
+                     axis.title=element_text(size=9,color = "black"),
+                     plot.tag=element_text(size=8,color = "black"),
+                     plot.title=element_text(size=9,color = "black", face = "bold"),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key.size = unit(0.4, "cm"), 
+                     #legend.key = element_rect(fill = "white"), # Set it to transparent
+                     legend.spacing.y = unit(0.4, "cm"),  
+                     legend.text=element_text(size=8,color = "black"),
+                     legend.title=element_blank(),
+                     #legend.key.height = unit(0.1, "cm"),
+                     #legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=8, face = "bold",color = "black", hjust=0),
+                     strip.background = element_blank())
+
+# Determine the common range of years for both plots
+year_range <- range(df_Erate_est$Year, df_diet$Year)
+
+
+p1 <- ggplot(df_Erate_est, aes(x = Year, y = Erate, group = Scenario)) +
+  geom_ribbon(aes(ymin = Erate_lo, ymax = Erate_hi, fill = Scenario), alpha = 0.25) +
+  geom_line(aes(color = Scenario)) + 
+  labs(y = "Energy intake rate", x = "", tag = "A") +
+  ggtitle("Effect of urchin and mussel increase on energy intake") +
+  theme_bw() + base_theme +
+  scale_fill_manual(values = c("Actual" = "indianred", "Alternate" = "navyblue")) +
+  scale_color_manual(values = c("Actual" = "indianred", "Alternate" = "navyblue")) +
+  geom_vline(xintercept = 2013, linetype = "dotted", size = 0.6) +
+  annotate(geom = "text", label = "SSW", x = 2010.5, y = 9.1, size = 2.5) +
+  annotate("segment", x = 2010.8, y = 9.0, xend = 2012.7, yend = 8.6,
+           arrow = arrow(type = "closed", length = unit(0.02, "npc"))) +
+  scale_x_continuous(limits = year_range, breaks = seq(min(year_range), max(year_range), by = 2)) +
+  theme(axis.text.x = element_blank())  
+p1
+
+# Second plot (p2)
+p2 <- ggplot(data = df_diet[ii,], aes(x = Year, group = Prey_type)) +
+  geom_ribbon(aes(ymin = eta_lo, ymax = eta_hi, fill = Prey_type), alpha = 0.25) +
+  geom_line(aes(y = eta, color = Prey_type)) +
+  labs(x = "Year", y = "Proportion of foraging effort", tag = "B") +
+  ggtitle("Foraging effort over time") +
+  theme_classic() +
+  scale_x_continuous(limits = year_range, breaks = seq(min(year_range), max(year_range), by = 2),  
+                     guide = guide_axis(angle = 45)) +
+  geom_vline(xintercept = 2013, linetype = "dotted", size = 0.6) +
+  annotate(geom = "text", label = "SSW", x = 2010.5, y = 0.39, size = 2.5) +
+  annotate("segment", x = 2010.8, y = 0.375, xend = 2012.7, yend = 0.32,
+           arrow = arrow(type = "closed", length = unit(0.02, "npc"))) +
+  theme_bw() + base_theme +
+  scale_fill_manual(values = c("mussels" = "orange", "urchins" = "purple"),
+                    labels = c("mussels" = "Mussels", "urchins" = "Sea urchins")) +
+  scale_color_manual(values = c("mussels" = "orange", "urchins" = "purple"),
+                     labels = c("mussels" = "Mussels", "urchins" = "Sea urchins"))
+p2
+
+p <- ggpubr::ggarrange(p1, p2, nrow = 2, align = "v")
+p
+
+ggsave(p, filename = file.path(figdir, "Fig4_lv_model.png"), 
+       width =6, height = 5, units = "in", dpi = 600, bg = "white")
+
+
+
+
+
+
+
