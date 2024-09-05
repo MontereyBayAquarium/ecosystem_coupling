@@ -246,7 +246,7 @@ p <- ggpubr::ggarrange(p1, p2, nrow = 2, align = "v")
 p
 
 ggsave(p, filename = file.path(figdir, "Fig4_lv_model.png"), 
-       width =6, height = 5, units = "in", dpi = 600, bg = "white")
+       width =5, height = 5, units = "in", dpi = 600, bg = "white")
 
 
 
