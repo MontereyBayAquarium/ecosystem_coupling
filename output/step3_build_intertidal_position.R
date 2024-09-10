@@ -19,8 +19,11 @@ mus_pos_raw <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mytilu
 star_pos_raw <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mytilus_pisaster_position_data.xlsx"),sheet = 3)
 
 #get mussel elevation dat
-mus_el <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_elevation_data_20231019.xlsx"),sheet = 1)%>%
-  janitor::clean_names()
+#mus_el <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_elevation_data_20231019.xlsx"),sheet = 1)%>%
+#  janitor::clean_names() #old
+
+mus_el <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_elevation_data_20240909.xlsx"),sheet = 2)%>%
+  janitor::clean_names() 
 
 #read mussel size fq. 
 #mus_size_orig <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_size_fq.xlsx"),sheet = 1) #original file
