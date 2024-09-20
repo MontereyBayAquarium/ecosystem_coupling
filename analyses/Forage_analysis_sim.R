@@ -6,7 +6,7 @@ rm(list=ls())
 #Prep workspace
 
 #install.packages("dirichlet", repos="http://R-Forge.R-project.org")
-librarian::shelf(dplyr, gtools, ggplot2, dirichlet, here, googledrive)
+librarian::shelf(dplyr, gtools, ggplot2, dirichlet, here, googledrive, ggsignif)
 
 rstan::rstan_options(javascript=FALSE)
 
@@ -209,7 +209,7 @@ year_range <- range(df_Erate_est$Year, df_diet$Year)
 p1 <- ggplot(df_Erate_est, aes(x = Year, y = Erate, group = Scenario)) +
   geom_ribbon(aes(ymin = Erate_lo, ymax = Erate_hi, fill = Scenario), alpha = 0.25) +
   geom_line(aes(color = Scenario)) + 
-  labs(y = "Energy intake rate", x = "", tag = "A") +
+  labs(y = "Energy intake rate", x = "Year", tag = "B") +
   ggtitle("Effect of urchin and mussel increase on energy intake") +
   theme_bw() + base_theme +
   scale_fill_manual(values = c("Actual" = "indianred", "Alternate" = "navyblue")) +
@@ -218,15 +218,15 @@ p1 <- ggplot(df_Erate_est, aes(x = Year, y = Erate, group = Scenario)) +
   annotate(geom = "text", label = "SSW", x = 2010.5, y = 9.1, size = 2.5) +
   annotate("segment", x = 2010.8, y = 9.0, xend = 2012.7, yend = 8.6,
            arrow = arrow(type = "closed", length = unit(0.02, "npc"))) +
-  scale_x_continuous(limits = year_range, breaks = seq(min(year_range), max(year_range), by = 2)) +
-  theme(axis.text.x = element_blank())  
+  scale_x_continuous(limits = year_range, breaks = seq(min(year_range), max(year_range), by = 2)) 
+ 
 p1
 
 # Second plot (p2)
 p2 <- ggplot(data = df_diet[ii,], aes(x = Year, group = Prey_type)) +
   geom_ribbon(aes(ymin = eta_lo, ymax = eta_hi, fill = Prey_type), alpha = 0.25) +
   geom_line(aes(y = eta, color = Prey_type)) +
-  labs(x = "Year", y = "Proportion of foraging effort", tag = "B") +
+  labs(x = "", y = "Proportion of foraging effort", tag = "A") +
   ggtitle("Foraging effort over time") +
   theme_classic() +
   scale_x_continuous(limits = year_range, breaks = seq(min(year_range), max(year_range), by = 2),  
@@ -239,18 +239,82 @@ p2 <- ggplot(data = df_diet[ii,], aes(x = Year, group = Prey_type)) +
   scale_fill_manual(values = c("mussels" = "orange", "urchins" = "purple"),
                     labels = c("mussels" = "Mussels", "urchins" = "Sea urchins")) +
   scale_color_manual(values = c("mussels" = "orange", "urchins" = "purple"),
-                     labels = c("mussels" = "Mussels", "urchins" = "Sea urchins"))
+                     labels = c("mussels" = "Mussels", "urchins" = "Sea urchins"))+
+  theme(axis.text.x = element_blank())  
 p2
 
-p <- ggpubr::ggarrange(p1, p2, nrow = 2, align = "v")
+p <- ggpubr::ggarrange(p2, p1, nrow = 2, align = "v")
 p
 
 ggsave(p, filename = file.path(figdir, "Fig4_lv_model.png"), 
        width =5, height = 5, units = "in", dpi = 600, bg = "white")
 
 
+################################################################################
+#statistical comparisons
+
+df_diet <- df_diet %>%
+  mutate(Prey_type = recode(Prey_type,
+                            "mussels" = "Mussels",
+                            "urchins" = "Sea urchins"))
+
+# Create the boxplot 
+b1 <- ggplot(df_diet, aes(x = Prey_type, y = eta, fill = Period)) +
+  geom_boxplot(position = position_dodge(width = 0.75)) + 
+  labs(y = "Proportion of foraging effort", x = "Prey type", fill = "Period") +
+  scale_fill_manual(values = c("Pre-2013" = "navyblue", "Post-2013" = "indianred")) +  
+  theme(legend.position = "right",  
+        plot.title = element_blank()) +
+  theme_bw() + base_theme
+b1
+
+ggsave(b1, filename = file.path(figdir, "FigS2_boxplots.png"), 
+       width =5, height = 5, units = "in", dpi = 600, bg = "white")
+
+# Calculate pre- and post-2013 averages for each species
+pre_post_averages <- df_diet %>%
+  group_by(Prey_type, Period) %>%
+  summarise(
+    mean_eta = mean(eta, na.rm = TRUE),  # Calculate the mean proportion of foraging effort
+    se_eta = sd(eta, na.rm = TRUE) / sqrt(n()),  # Calculate standard error
+    n = n(),  # Count of observations
+    .groups = 'drop'
+  )
+
+# Display the pre- and post-2013 averages summary
+print(pre_post_averages)
+
+# Calculate fold increase for each prey type
+fold_increase <- pre_post_averages %>%
+  group_by(Prey_type) %>%
+  summarise(
+    fold_increase = mean_eta[Period == "Post-2013"] / mean_eta[Period == "Pre-2013"],
+    .groups = 'drop'
+  )
+
+# Display the fold increase results
+print(fold_increase)
 
 
+# Perform t-tests to statistically compare pre- vs. post-2013 proportions for each prey type using raw data
+t_test_results_raw <- df_diet %>%
+  group_by(Prey_type) %>%
+  summarise(
+    t_test = list(t.test(eta ~ Period)),
+    .groups = 'drop'
+  )
 
+# Extract p-values and other test details
+t_test_summary_raw <- t_test_results_raw %>%
+  mutate(
+    p_value = sapply(t_test, function(x) x$p.value),
+    statistic = sapply(t_test, function(x) x$statistic),
+    conf_int = sapply(t_test, function(x) paste(round(x$conf.int, 3), collapse = " to ")),
+    mean_diff = sapply(t_test, function(x) diff(x$estimate))
+  ) %>%
+  select(Prey_type, mean_diff, statistic, p_value, conf_int)
+
+# Display the t-test summary results
+print(t_test_summary_raw)
 
 
