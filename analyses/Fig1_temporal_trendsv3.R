@@ -15,7 +15,7 @@ figdir <- here::here("figures")
 census_orig <- read_csv(file.path(localdir, "processed/census/census_data_processed.csv")) 
 
 # Get rocky intertidal data
-load(file.path(localdir, "processed/rocky_intertidal/pisaster_mytilus_processed.rdata"))
+load(file.path(localdir, "processed/rocky_intertidal/pisaster_mytilus_processed2.rdata"))
 
 #read foraging data
 forage_orig <- read_csv(file.path(localdir,"processed/foraging_data/foraging_data_2016_2023.csv"))
@@ -215,7 +215,7 @@ g <- ggplot() +
     legend.background = element_rect(fill='transparent'),
     legend.key = element_rect(fill='transparent')
   )
-g
+#g
 
 #from https://stackoverflow.com/questions/70977700/creating-completely-customized-legends-in-ggplot2
 dummy_guide <- function(
@@ -259,7 +259,7 @@ g0 <- g + dummy_guide(
   size=4
 )
 
-g0
+#g0
 
 ################################################################################
 #plot pisaster 

@@ -14,9 +14,12 @@ librarian::shelf(tidyverse,sf, janitor)
 basedir <- here::here("output")
 
 #read data
-meta_dat <- readxl::read_xlsx(file.path(basedir,"/raw/rocky_intertidal/mytilus_cov_pis_den.xlsx"),sheet = 1)
-mus_orig <- readxl::read_xlsx(file.path(basedir,"/raw/rocky_intertidal/mytilus_cov_pis_den.xlsx"),sheet = 2)
-pis_orig <- readxl::read_xlsx(file.path(basedir,"/raw/rocky_intertidal/mytilus_cov_pis_den.xlsx"),sheet = 3)
+#meta_dat <- readxl::read_xlsx(file.path(basedir,"/raw/rocky_intertidal/mytilus_cov_pis_den.xlsx"),sheet = 1) #old
+meta_dat <- readxl::read_xlsx(file.path(basedir,"/raw/rocky_intertidal/mytilus_cov_pis_den_20240924.xlsx"),sheet = 1) #old
+#mus_orig <- readxl::read_xlsx(file.path(basedir,"/raw/rocky_intertidal/mytilus_cov_pis_den.xlsx"),sheet = 2) #old
+mus_orig <- readxl::read_xlsx(file.path(basedir,"/raw/rocky_intertidal/mytilus_cov_pis_den_20240924.xlsx"),sheet = 2) #old
+#pis_orig <- readxl::read_xlsx(file.path(basedir,"/raw/rocky_intertidal/mytilus_cov_pis_den.xlsx"),sheet = 3) #old
+pis_orig <- readxl::read_xlsx(file.path(basedir,"/raw/rocky_intertidal/mytilus_cov_pis_den_20240924.xlsx"),sheet = 3)
 
 
 ################################################################################
@@ -42,7 +45,7 @@ pis_build1 <- pis_orig %>% filter(latitude >= 36.47986 & latitude <= 36.64640) %
 ##Step 2 - save
 
 
-save(mus_build1, pis_build1, file = file.path(basedir, "processed/rocky_intertidal/pisaster_mytilus_processed.rdata"))
+save(mus_build1, pis_build1, file = file.path(basedir, "processed/rocky_intertidal/pisaster_mytilus_processed2.rdata"))
 
 
 
