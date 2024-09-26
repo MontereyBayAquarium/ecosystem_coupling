@@ -465,7 +465,16 @@ p2 <- ggplot(combined_data %>% filter(category == "Mussels"), aes(x = year, y = 
 #p2
 
 ################################################################################
-#plot
+
+#calculate no. otters by time period
+
+n_otters <- combined_data %>% filter(category == "Total independent otters") %>%
+            mutate(Period = ifelse(year < 2013, "Before", "After")) %>%
+            group_by(Period) %>%
+            summarize(mean = mean(response, na.rm=TRUE),
+                      sd = sd(response, na.rm=TRUE))
+
+#plot sea otters
 
 p3 <- ggplot(combined_data %>% filter(category == "Total independent otters"), aes(x = year, y = response)) +
   geom_point(alpha = 0.4, color = "#2CA02C", show.legend = FALSE, size=1) +
