@@ -15,7 +15,7 @@ figdir <- here::here("figures")
 census_orig <- read_csv(file.path(localdir, "processed/census/census_data_processed.csv")) 
 
 # Get rocky intertidal data
-load(file.path(localdir, "processed/rocky_intertidal/pisaster_mytilus_processed2.rdata"))
+load(file.path(localdir, "processed/rocky_intertidal/pisaster_mytilus_processed.rdata"))
 
 #read foraging data
 forage_orig <- read_csv(file.path(localdir,"processed/foraging_data/foraging_data_2016_2023.csv"))
@@ -505,15 +505,15 @@ p3 <- ggplot(combined_data %>% filter(category == "Total independent otters"), a
 
 
 p <- gridExtra::grid.arrange(p3,p2,p1, ncol=1) 
+p_final <- gridExtra::grid.arrange(p, g0, ncol = 2, widths = c(1,1.35))
 
-p_final <- gridExtra::grid.arrange(p, g0, ncol=2)
 p_final
 
 
 
 #save
-ggsave(p_final, filename = file.path(figdir, "Fig1_temporal_trendsv3.png"), 
-       width = 7, height = 5.2, units = "in", dpi = 600, bg = "white")
+ggsave(p_final, filename = file.path(figdir, "Fig1_temporal_trendsv4.png"), 
+       width = 7, height = 6, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 
 
