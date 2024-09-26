@@ -18,9 +18,6 @@ meta_dat <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mytilus_p
 mus_pos_raw <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mytilus_pisaster_position_data.xlsx"),sheet = 2)
 star_pos_raw <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mytilus_pisaster_position_data.xlsx"),sheet = 3)
 
-#get mussel elevation dat
-#mus_el <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_elevation_data_20231019.xlsx"),sheet = 1)%>%
-#  janitor::clean_names() #old
 
 mus_el <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_elevation_data_20240909.xlsx"),sheet = 2)%>%
   janitor::clean_names() 
@@ -31,7 +28,7 @@ mus_meta <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_si
 mus_size_orig <- read_csv(file.path(localdir,"raw/rocky_intertidal/mussel_sizes_20240603.csv"))
 
 #read mussel perc cov
-mus_cov_orig <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mytilus_cov_pis_den.xlsx"),sheet = 2)
+mus_cov_orig <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mytilus_cov_pis_den_20240924.xlsx"),sheet = 2)
 
 
 ################################################################################
@@ -62,10 +59,10 @@ mus_elev <- mus_el %>% filter(latitude >= 36.47986 & latitude <= 36.64640) %>%
   #drop asilomar since there is only one year
   filter(!(intertidal_sitename %in% c("Asilomar","China Rocks")))
 
-
+################################################################################
 #export
 save(mus_pos_build1, mus_size_build1, mus_cov_period, mus_elev, file = 
-       file.path(localdir, "processed/rocky_intertidal/position_datav2.rdata"))
+       file.path(localdir, "processed/rocky_intertidal/position_datav2.rdata")) #last write 26 Sept 2024
 
 
 

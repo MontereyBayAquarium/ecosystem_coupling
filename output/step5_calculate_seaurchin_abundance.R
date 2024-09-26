@@ -34,7 +34,7 @@ site_table <- read.csv(file.path(basedir, "MLPA_kelpforest_site_table.6.csv")) %
                 baseline_region)%>%
   distinct() #remove duplicates
 
-mus_dat <- load(file = file.path("output/processed/rocky_intertidal/pisaster_mytilus_processed.rdata"))
+mus_dat <- load(file = file.path("output/processed/rocky_intertidal/pisaster_mytilus_processed2.rdata"))
 
 
 ################################################################################

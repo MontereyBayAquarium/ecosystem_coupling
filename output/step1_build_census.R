@@ -112,7 +112,7 @@ ggsave(g, file = file.path("/Users/jossmith/Downloads/indep_plot.png"), width = 
 ################################################################################
 #Step 3 - export
 
-write.csv(census_build1, file = file.path(basedir, "processed/census/census_data_processed.csv"))
+write.csv(census_build1, file = file.path(basedir, "processed/census/census_data_processed.csv")) #last write 26 September 2024
 
 
 
