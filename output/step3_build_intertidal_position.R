@@ -24,7 +24,6 @@ mus_el <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_elev
 
 #read mussel size fq. 
 #mus_size_orig <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_size_fq.xlsx"),sheet = 1) #original file
-mus_meta <- readxl::read_xlsx(file.path(localdir,"raw/rocky_intertidal/mussel_size_fq.xlsx"),sheet = 2) #original file
 mus_size_orig <- read_csv(file.path(localdir,"raw/rocky_intertidal/mussel_sizes_20240603.csv"))
 
 #read mussel perc cov
@@ -62,7 +61,7 @@ mus_elev <- mus_el %>% filter(latitude >= 36.47986 & latitude <= 36.64640) %>%
 ################################################################################
 #export
 save(mus_pos_build1, mus_size_build1, mus_cov_period, mus_elev, file = 
-       file.path(localdir, "processed/rocky_intertidal/position_datav2.rdata")) #last write 26 Sept 2024
+       file.path(localdir, "processed/rocky_intertidal/position_data.rdata")) #last write 26 Sept 2024
 
 
 

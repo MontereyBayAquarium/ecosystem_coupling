@@ -42,7 +42,7 @@ pis_build1 <- pis_orig %>% filter(latitude >= 36.47986 & latitude <= 36.64640) %
 ##Step 2 - save
 
 
-save(mus_build1, pis_build1, file = file.path(basedir, "processed/rocky_intertidal/pisaster_mytilus_processed2.rdata")) #last write 26 Sept 2024
+save(mus_build1, pis_build1, file = file.path(basedir, "processed/rocky_intertidal/pisaster_mytilus_processed.rdata")) #last write 26 Sept 2024
 
 
 

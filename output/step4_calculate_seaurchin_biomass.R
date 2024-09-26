@@ -120,7 +120,7 @@ g <- ggplot(urch_dat_orig, aes(x = test_diameter_mm, y = soft_tissue_mass_g)) +
   annotate("text", x = min(urch_dat_orig$test_diameter_mm), y = max(urch_dat_orig$soft_tissue_mass_g), 
            label = as.expression(equation_text), hjust = 0, vjust = 1, size = 5, color = "black")
 
-ggsave(g, file = file.path(figdir, "purple_urchin_biomass.png"), width = 6,
-       height = 5, units = "in")
+#ggsave(g, file = file.path(figdir, "purple_urchin_biomass.png"), width = 6,
+ #      height = 5, units = "in")
 
 

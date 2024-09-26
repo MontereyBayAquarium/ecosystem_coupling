@@ -106,8 +106,8 @@ g <- ggplot(summarized_data, aes(x = year)) +
 g
 
 
-ggsave(g, file = file.path("/Users/jossmith/Downloads/indep_plot.png"), width = 6,
-       height = 5, units = "in")
+#ggsave(g, file = file.path("/Users/jossmith/Downloads/indep_plot.png"), width = 6,
+ #      height = 5, units = "in")
 
 ################################################################################
 #Step 3 - export
