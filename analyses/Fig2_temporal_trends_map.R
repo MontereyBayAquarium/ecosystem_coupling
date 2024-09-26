@@ -512,7 +512,7 @@ p_final
 
 
 #save
-ggsave(p_final, filename = file.path(figdir, "Fig1_temporal_trendsv4.png"), 
+ggsave(p_final, filename = file.path(figdir, "Fig2_temporal_trends.png"), 
        width = 7, height = 6, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 

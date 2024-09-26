@@ -10,7 +10,7 @@ localdir <- here::here("output")
 figdir <- here::here("figures")
 
 # Get rocky intertidal position data
-load(file.path(localdir, "processed/rocky_intertidal/position_datav2.rdata"))
+load(file.path(localdir, "processed/rocky_intertidal/position_data.rdata"))
 
 # Calculate the range of points for each site across all years and identify points unique to 'after'
 #We use !any(ssw_period == "before") to check if there are no rows with 'ssw_period'
@@ -247,8 +247,8 @@ n <- gridExtra::grid.arrange(g1_full, m, nrow=2, heights = c(0.65,0.25))
 
 
 
-ggsave(n, filename = file.path(figdir, "Fig2_mussel_expansion2.png"), 
-      width = 7, height = 7.5, units = "in", dpi = 600)
+ggsave(n, filename = file.path(figdir, "Fig3_mussel_expansion.png"), 
+      width = 7, height = 7.5, units = "in", dpi = 600) #last write 26 Sept 2024
 
 
 ################################################################################
@@ -322,7 +322,7 @@ s2
 s <- ggpubr::ggarrange(s1, s2, nrow=1)
 
 ggsave(s, filename = file.path(figdir, "FigS1_mussel_boxplots.png"), 
-       width =7, height = 5, units = "in", dpi = 600, bg = "white")
+       width =7, height = 5, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 
 

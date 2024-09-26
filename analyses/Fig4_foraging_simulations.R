@@ -247,16 +247,18 @@ p <- ggpubr::ggarrange(p2, p1, nrow = 2, align = "v")
 p
 
 ggsave(p, filename = file.path(figdir, "Fig4_lv_model.png"), 
-       width =5, height = 5, units = "in", dpi = 600, bg = "white")
+       width =5, height = 5, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 
 ################################################################################
 #statistical comparisons
 
 df_diet <- df_diet %>%
+  data.frame()%>%
   mutate(Prey_type = recode(Prey_type,
                             "mussels" = "Mussels",
-                            "urchins" = "Sea urchins"))
+                            "urchins" = "Sea urchins"),
+         Period = ifelse(Year > 2013, "Post-2013","Pre-2013"))
 
 # Create the boxplot 
 b1 <- ggplot(df_diet, aes(x = Prey_type, y = eta, fill = Period)) +
@@ -268,8 +270,8 @@ b1 <- ggplot(df_diet, aes(x = Prey_type, y = eta, fill = Period)) +
   theme_bw() + base_theme
 b1
 
-ggsave(b1, filename = file.path(figdir, "FigS2_boxplots.png"), 
-       width =5, height = 5, units = "in", dpi = 600, bg = "white")
+#ggsave(b1, filename = file.path(figdir, "FigS2_boxplots.png"), 
+ #      width =5, height = 5, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 # Calculate pre- and post-2013 averages for each species
 pre_post_averages <- df_diet %>%
