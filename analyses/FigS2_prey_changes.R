@@ -5,7 +5,7 @@ rm(list=ls())
 ################################################################################
 #Prep workspace
 
-librarian::shelf(dplyr, gtools, ggplot2)
+librarian::shelf(tidyverse, gtools, ggplot2, googledrive)
 
 #Set directories and load data
 datin <- here::here("output","processed")
