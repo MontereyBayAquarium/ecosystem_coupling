@@ -6,7 +6,7 @@ rm(list=ls())
 #Prep workspace
 
 #install.packages("dirichlet", repos="http://R-Forge.R-project.org")
-librarian::shelf(dplyr, gtools, ggplot2, dirichlet, here, googledrive, ggsignif)
+librarian::shelf(dplyr, gtools, ggplot2, dirichlet, here, googledrive, ggsignif, rstan)
 
 rstan::rstan_options(javascript=FALSE)
 
@@ -246,8 +246,8 @@ p2
 p <- ggpubr::ggarrange(p2, p1, nrow = 2, align = "v")
 p
 
-ggsave(p, filename = file.path(figdir, "Fig4_lv_model.png"), 
-       width =5, height = 5, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
+#ggsave(p, filename = file.path(figdir, "Fig4_lv_model.png"), 
+ #      width =5, height = 5, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 
 ################################################################################
