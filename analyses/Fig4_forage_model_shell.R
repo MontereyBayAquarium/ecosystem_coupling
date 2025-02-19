@@ -122,9 +122,7 @@ source(here::here("analyses","cmdstan_sumstats.r"))
 
 
 ################################################################################
-#Plot
-
-#Plot proportion foraging effort (Figure 4)-------------------------------------
+#Plot Figure 4 - proportion foraging effort
 
 ii_urchins = which(startsWith(rownames(sumstats), "pi[") & endsWith(rownames(sumstats), ",1]"))
 ii_mussels = which(startsWith(rownames(sumstats), "pi[") & endsWith(rownames(sumstats), ",2]"))
@@ -195,8 +193,11 @@ p <- ggplot(data = df_diet, aes(x = Year, group = Prey_type)) +
 
 p
 
+ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"), 
+       width =5, height = 3, units = "in", dpi = 600, bg = "white")
 
-#Plot energetic intake (Figure 5)-----------------------------------------------
+################################################################################
+#Plot Figure 5 - energetic intake
 
 # 
 color_scheme_set("mix-viridis-orange-purple")
@@ -342,14 +343,15 @@ plt_Erate = ggplot(df_Erate_est, aes(x = Year, y = Erate)) +
   scale_fill_brewer(palette = "Dark2") +
   scale_color_brewer(palette = "Dark2") +
   facet_wrap(~Scenario2, ncol = 1, strip.position = "top") +  
-  scale_x_continuous(breaks = seq(2006, max(df_Erate_est$Year), by = 3)) +  # Label every other year
+  scale_x_continuous(breaks = seq(2006, max(df_Erate_est$Year), by = 2),
+                     guide = guide_axis(angle = 45)) + 
   theme_classic() + base_theme2 + 
   theme(legend.position = "none")
 
 plt_Erate
 
 
-ggsave(plt_Erate, filename = file.path(figdir, "Fig4_energetic_intake.png"), 
+ggsave(plt_Erate, filename = file.path(figdir, "Fig5_energetic_intake.png"), 
       width =4, height = 7, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
 
 
