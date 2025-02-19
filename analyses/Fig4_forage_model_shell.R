@@ -197,9 +197,8 @@ ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"),
        width =5, height = 3, units = "in", dpi = 600, bg = "white")
 
 ################################################################################
-#Plot Figure 5 - energetic intake
+#Plot posteriors
 
-# 
 color_scheme_set("mix-viridis-orange-purple")
 mcmc_trace(mcmc_array,regex_pars=("sig_L"))
 mcmc_trace(mcmc_array,regex_pars=("sig_E"))
@@ -239,6 +238,9 @@ for(i in 1:(K-1)){
 }
 gridExtra::grid.arrange(grobs = plt_trends)
 
+################################################################################
+#Plot alt prey
+
 plt_trends2 = ggplot(filter(df_prey_est,Year>2007 & (Prey == "urchin" | Prey == "mussel")),aes(x=Year,y=Dns)) +
   geom_ribbon(aes(ymin=Dns_lo,ymax=Dns_hi,fill=Prey),alpha=.3) +
   geom_line(aes(color=Prey),linewidth=1.1) +
@@ -269,6 +271,7 @@ print(plt_trends3)
 ii = which(startsWith(vn,"Ebar["))
 iiu = which(startsWith(vn,"U_prd[")) 
 iim = which(startsWith(vn,"M_prd[")) 
+
 df_Erate_est = data.frame(Year=Years,Scenario=rep("Actual",N),
                           Erate=sumstats$mean[ii],
                           Erate_lo=sumstats$`5%`[ii], 
@@ -279,6 +282,10 @@ df_Erate_est = data.frame(Year=Years,Scenario=rep("Actual",N),
                           M_prd=sumstats$mean[iim],
                           M_prd_lo=sumstats$`5%`[iim], 
                           M_prd_hi=sumstats$`95%`[iim] )
+
+
+################################################################################
+#Plot Figure 5 - energetic intake
 
 for(j in 1:3){
   ii = which(startsWith(vn,paste0("Ebar_alt[",j)))
@@ -362,39 +369,48 @@ plt_Erate = ggplot(df_Erate_est, aes(x = Year, y = Erate)) +
 print(plt_Erate)
 
 
-
 ggsave(plt_Erate, filename = file.path(figdir, "Fig5_energetic_intake.png"), 
       width =4, height = 7, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
 
 
+################################################################################
+#Plot Figure SX urchin predation
 
 
 
 ii = which(df_Erate_est$Scenario == "Actual")
 tmp = df_Erate_est[ii,c(1,6,7,8)]
-plt_U_pred = ggplot(df_Erate_est,aes(x=Year,y=U_prd)) +
-  geom_ribbon(aes(ymin=U_prd_lo,ymax=U_prd_hi,fill=Scenario),alpha=.25) +
-  geom_line(aes(color=Scenario)) + 
-  geom_ribbon(data=tmp,aes(ymin=U_prd_lo,ymax=U_prd_hi),alpha=.1) +
-  geom_line(data=tmp,aes(x=Year,y=U_prd),linetype="dashed") + 
-  geom_line(data=tmp,aes(x=Year,y=U_prd_lo),linetype="dotted") + 
-  geom_line(data=tmp,aes(x=Year,y=U_prd_hi),linetype="dotted") + 
-  geom_vline(xintercept = 2013, linetype="dashed") +
-  labs(y="Urchins consumed per minute") +
-  ggtitle("Effect of urchin and mussel increase on urchin predation rate",
-          subtitle = paste0("Scenario 1 = no urchin increase, ",
-                            "Scenario 2 = no mussel increase, ",
-                            "Scenario 3 = no urchin or mussel increase")) +
-  theme_classic() + 
-  scale_fill_brewer(palette = "Set1") +
-  scale_color_brewer(palette = "Set1") +
-  facet_grid(rows = vars(Scenario))
+
+# Ensure colors match plt_Erate
+plt_U_pred = ggplot(df_Erate_est, aes(x = Year, y = U_prd)) +
+  geom_ribbon(aes(ymin = U_prd_lo, ymax = U_prd_hi, fill = Scenario), alpha = 0.3) +  # Match transparency
+  geom_line(aes(color = Scenario), size = 0.6) +  # Match line width
+  geom_ribbon(data = tmp, aes(ymin = U_prd_lo, ymax = U_prd_hi), alpha = 0.1) +
+  geom_line(data = tmp, aes(x = Year, y = U_prd), linetype = "dotdash", size = 0.6) +  
+  geom_line(data = tmp, aes(x = Year, y = U_prd_lo), linetype = "dotted", size = 0.6) +  
+  geom_line(data = tmp, aes(x = Year, y = U_prd_hi), linetype = "dotted", size = 0.6) +  
+  geom_vline(xintercept = 2013, linetype = "dashed") +
+  labs(y = "Urchins consumed per minute", 
+       title = "") +  # Remove title to match plt_Erate
+  scale_fill_manual(values = c("Actual" = "gray90", 
+                               "Scenario 1" = dark2_colors[2],  # Orange
+                               "Scenario 2" = dark2_colors[3],  # Purple
+                               "Scenario 3" = dark2_colors[4])) +  # Pink
+  scale_color_manual(values = c("Actual" = "black", 
+                                "Scenario 1" = dark2_colors[2],  
+                                "Scenario 2" = dark2_colors[3],  
+                                "Scenario 3" = dark2_colors[4])) +
+  facet_wrap(~Scenario2, ncol = 1, strip.position = "top") +   # Use facet_wrap() to match plt_Erate
+  scale_x_continuous(breaks = seq(2006, max(df_Erate_est$Year), by = 2),
+                     guide = guide_axis(angle = 45)) + 
+  theme_classic() + base_theme2 +  
+  theme(legend.position = "none")
+
 print(plt_U_pred)
 
 
-
-
-
+ggsave(plt_U_pred, filename = file.path(figdir, "FigS3_urchin_consumption.png"), 
+       width =4, height = 7, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
 
 
 
