@@ -415,31 +415,45 @@ ggsave(plt_U_pred, filename = file.path(figdir, "FigS3_urchin_consumption.png"),
 ################################################################################
 #Update tables
 
-ii_Ebar <- which(startsWith(rownames(sumstats), "Ebar["))
-ii_Ebar <- ii_Ebar[1:K]  
+# Define indices for pre- and post-2013
+pre_index <- which(Years < 2013)
+post_index <- which(Years >= 2013)
 
-# Extract energy intake values
-E_mean <- sumstats$mean[ii_Ebar]
-E_sd <- sumstats$sd[ii_Ebar]
-E_lo <- sumstats$`5%`[ii_Ebar]
-E_hi <- sumstats$`95%`[ii_Ebar]
+#verfiy dim
+cat("Pre-2013 Years: ", Years[pre_index], "\n")
+cat("Post-2013 Years: ", Years[post_index], "\n")
 
-pre_effort_mean <- colMeans(pi_obs[pre_index,]) * 100  
-pre_effort_sd <- apply(pi_obs[pre_index,], 2, sd) * 100
-post_effort_mean <- colMeans(pi_obs[post_index,]) * 100
-post_effort_sd <- apply(pi_obs[post_index,], 2, sd) * 100
+cat("Pre-2013 Effort Means: ", pre_effort_mean, "\n")
+cat("Pre-2013 Effort SDs: ", pre_effort_sd, "\n")
+cat("Post-2013 Effort Means: ", post_effort_mean, "\n")
+cat("Post-2013 Effort SDs: ", post_effort_sd, "\n")
+
+#Get proportion effort
+pre_effort_mean <- colMeans(pi_obs[pre_index, ]) * 100
+pre_effort_sd <- apply(pi_obs[pre_index, ], 2, sd) * 100
+post_effort_mean <- colMeans(pi_obs[post_index, ]) * 100
+post_effort_sd <- apply(pi_obs[post_index, ], 2, sd) * 100
+
+
+#Get proportion effort
+E_mean <- colMeans(E_obs)
+E_sd <- colMeans(sd_E)
+
+
 
 df_prey_table <- data.frame(
   PreyType = PreyTypes,
   E_kcal_m = E_mean,
   E_SD = E_sd,
-  E_Lower95 = E_lo,
-  E_Upper95 = E_hi,
   Pre2013_Effort = pre_effort_mean,
   Pre2013_Effort_SD = pre_effort_sd,
   Post2013_Effort = post_effort_mean,
   Post2013_Effort_SD = post_effort_sd
 )
+
+write.csv(df_prey_table, file.path(here::here("tables","prey_table.csv"))) #last write 19 Feb 2025
+
+
 
 
 
