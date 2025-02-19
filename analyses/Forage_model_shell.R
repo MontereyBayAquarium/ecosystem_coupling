@@ -1,20 +1,34 @@
-require(dplyr)
-require(parallel)
-library(cmdstanr)
-library(posterior)
-library(gtools)
-library(ggplot2)
-library(bayesplot)
-library(readxl)
-library(RColorBrewer)
-#devtools::install_github("dkahle/dirichlet")
-library(dirichlet)
-rstan::rstan_options(javascript=FALSE)
-# Load data ----------------------------------------------
-SOFA_rslts <- mget(load("Rslt_Grp-Period_2024_Sep_04_14hr.rdata", envir=(NE. <- new.env())), envir=NE.)
-rm(NE.)
 
-# Process data -------------------------------------------
+
+
+
+
+rm(list=ls())
+
+################################################################################
+#Prep workspace
+
+#install.packages("dirichlet", repos="http://R-Forge.R-project.org")
+librarian::shelf(dplyr, parallel, cmdstanr, posterior, gtools, ggplot2, bayesplot,
+                 readxl, RColorBrewer, dirichlet, googlesheets4)
+
+rstan::rstan_options(javascript=FALSE)
+
+################################################################################
+#Set directories and load data
+datin <- here::here("output","processed")
+figdir <- here::here("figures")
+
+# Define the Google Drive file ID for sofa output
+# This file exceeds 100MB GitHub limit so is stored externally
+file_id <- "1yC8yrS69uOqbvlzQJakL0z-DC-yMhNel"
+
+temp_file <- tempfile(fileext = ".rdata")
+drive_download(as_id(file_id), path = temp_file, overwrite = TRUE)
+SOFA_rslts <- mget(load(temp_file))
+
+################################################################################
+# Process data 
 N_base = c(3,6) 
 sumstats = SOFA_rslts$sumstats; mcmc = SOFA_rslts$mcmc; vn0 = SOFA_rslts$vn; 
 Years = as.integer(SOFA_rslts$Groupname)
@@ -22,7 +36,7 @@ N = length(Years)
 Y0 = min(Years)-1
 K = SOFA_rslts$Nptps
 
-df_Prey = read_excel("Preytypes.xlsx")
+df_Prey = read_excel(file.path(datin,"/sofa/Preytypes.xlsx"))
 gamma = array(0, dim=c(2,K))
 gamma[1,1:K] = df_Prey$gamma1
 gamma[2,1:K] = df_Prey$gamma2
@@ -74,7 +88,7 @@ nburnin = 300
 cores = detectCores()
 ncore = max(3,min(5,cores-2))
 Niter = round(nsamples/ncore)
-fitmodel = "Foraging_fit.stan"
+fitmodel = file.path("analyses/Foraging_fit.stan")
 #
 stan.data = list(N=N,K=K,pi_obs=pi_obs,tau=tau,mu_obs=mu_E,Vadj=Vadj,
                  N_base=N_base,log_G_pri=log_G_pri)
@@ -104,11 +118,12 @@ suppressMessages(
 # tmp = fit$output(); tmp[[1]][40:80]
 # generate summary stats (sumstats, mcmc matrix)
 # select_chains = seq(1,ncore); select_chains = select_chains[-c(1:2)]
-source("cmdstan_sumstats.r")
+source(here::here("analyses","cmdstan_sumstats.R"))
+
 #
 # Examine results -----------------------------------------------
 color_scheme_set("mix-viridis-orange-purple")
-mcmc_trace(mcmc_array,regex_pars=("sig_L"))
+mcmc_trace(mcmc_array,variable=("sig_L"))
 mcmc_trace(mcmc_array,regex_pars=("sig_E"))
 # mcmc_trace(mcmc_array,pars="alpha")
 # mcmc_trace(mcmc_array,regex_pars="delta")
@@ -131,8 +146,8 @@ df_prey_est$Prey = factor(df_prey_est$Prey, levels = Preynames)
 for(i in 1:(K-1)){
   ii = which(startsWith(vn,"delta[") & endsWith(vn,paste0(",",i,"]")))
   Dns = sumstats$mean[ii]
-  Dns_lo = sumstats$`5%`[ii] 
-  Dns_hi = sumstats$`95%`[ii]
+  Dns_lo = sumstats$`q5`[ii] 
+  Dns_hi = sumstats$`q95`[ii]
   df_pr_est = data.frame(Prey = rep(Preynames[i],N), Year=Years,
                          Dns=Dns,Dns_lo=Dns_lo,Dns_hi=Dns_hi)
   plt_trends[[i]] = ggplot(filter(df_pr_est,Year>2007),aes(x=Year,y=Dns)) +
@@ -178,14 +193,14 @@ iiu = which(startsWith(vn,"U_prd["))
 iim = which(startsWith(vn,"M_prd[")) 
 df_Erate_est = data.frame(Year=Years,Scenario=rep("Actual",N),
                           Erate=sumstats$mean[ii],
-                          Erate_lo=sumstats$`5%`[ii], 
-                          Erate_hi=sumstats$`95%`[ii],
+                          Erate_lo=sumstats$`q5`[ii], 
+                          Erate_hi=sumstats$`q95`[ii],
                           U_prd=sumstats$mean[iiu],
-                          U_prd_lo=sumstats$`5%`[iiu], 
-                          U_prd_hi=sumstats$`95%`[iiu],
+                          U_prd_lo=sumstats$`q5`[iiu], 
+                          U_prd_hi=sumstats$`q95`[iiu],
                           M_prd=sumstats$mean[iim],
-                          M_prd_lo=sumstats$`5%`[iim], 
-                          M_prd_hi=sumstats$`95%`[iim] )
+                          M_prd_lo=sumstats$`q5`[iim], 
+                          M_prd_hi=sumstats$`q95`[iim] )
 
 for(j in 1:3){
   ii = which(startsWith(vn,paste0("Ebar_alt[",j)))
@@ -195,14 +210,14 @@ for(j in 1:3){
                        data.frame(Year=Years,
                                   Scenario=rep(paste0("Scenario ",j),N),
                                   Erate=sumstats$mean[ii],
-                                  Erate_lo=sumstats$`5%`[ii], 
-                                  Erate_hi=sumstats$`95%`[ii],
+                                  Erate_lo=sumstats$`q5`[ii], 
+                                  Erate_hi=sumstats$`q95`[ii],
                                   U_prd=sumstats$mean[iiu],
-                                  U_prd_lo=sumstats$`5%`[iiu], 
-                                  U_prd_hi=sumstats$`95%`[iiu],
+                                  U_prd_lo=sumstats$`q5`[iiu], 
+                                  U_prd_hi=sumstats$`q95`[iiu],
                                   M_prd=sumstats$mean[iim],
-                                  M_prd_lo=sumstats$`5%`[iim], 
-                                  M_prd_hi=sumstats$`95%`[iim] ) )
+                                  M_prd_lo=sumstats$`q5`[iim], 
+                                  M_prd_hi=sumstats$`q95`[iim] ) )
   
 }
 
