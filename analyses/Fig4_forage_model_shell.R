@@ -8,7 +8,7 @@ rm(list=ls())
 
 #install.packages("dirichlet", repos="http://R-Forge.R-project.org")
 librarian::shelf(dplyr, parallel, cmdstanr, posterior, gtools, ggplot2, bayesplot,
-                 readxl, RColorBrewer, dirichlet, googlesheets4)
+                 readxl, RColorBrewer, dirichlet, googledrive)
 
 rstan::rstan_options(javascript=FALSE)
 
@@ -118,7 +118,87 @@ suppressMessages(
 # select_chains = seq(1,ncore); select_chains = select_chains[-c(1:2)]
 source(here::here("analyses","cmdstan_sumstats.r"))
 #
-# Examine results -----------------------------------------------
+
+
+
+################################################################################
+#Plot
+
+#Plot proportion foraging effort (Figure 4)-------------------------------------
+
+ii_urchins = which(startsWith(rownames(sumstats), "pi[") & endsWith(rownames(sumstats), ",1]"))
+ii_mussels = which(startsWith(rownames(sumstats), "pi[") & endsWith(rownames(sumstats), ",2]"))
+
+df_diet = data.frame(
+  Year = Years, 
+  Prey_type = rep("urchins", N),
+  Scenario = rep("Actual", N),
+  eta = sumstats$mean[ii_urchins],  # Mean value from sumstats
+  eta_lo = sumstats$`5%`[ii_urchins],  
+  eta_hi = sumstats$`95%`[ii_urchins]  
+)
+
+df_diet = rbind(df_diet, 
+                data.frame(
+                  Year = Years, 
+                  Prey_type = rep("mussels", N),
+                  Scenario = rep("Actual", N),
+                  eta = sumstats$mean[ii_mussels],  
+                  eta_lo = sumstats$`5%`[ii_mussels], 
+                  eta_hi = sumstats$`95%`[ii_mussels]
+                ))
+
+
+base_theme <-  theme(axis.text=element_text(size=8, color = "black"),
+                     axis.title=element_text(size=9,color = "black"),
+                     plot.tag=element_text(size=8,color = "black"),
+                     plot.title=element_text(size=9,color = "black", face = "bold"),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key.size = unit(0.4, "cm"), 
+                     #legend.key = element_rect(fill = "white"), # Set it to transparent
+                     legend.spacing.y = unit(0.4, "cm"),  
+                     legend.text=element_text(size=8,color = "black"),
+                     legend.title=element_blank(),
+                     #legend.key.height = unit(0.1, "cm"),
+                     #legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=8, face = "bold",color = "black", hjust=0),
+                     strip.background = element_blank())
+
+# Define the common range of years
+year_range <- range(df_diet$Year)
+
+
+# Generate the p2 plot
+p <- ggplot(data = df_diet, aes(x = Year, group = Prey_type)) +
+  geom_ribbon(aes(ymin = eta_lo, ymax = eta_hi, fill = Prey_type), alpha = 0.25) +
+  geom_line(aes(y = eta, color = Prey_type)) +
+  labs(x = "", y = "Proportion of foraging effort") +
+  ggtitle("Foraging effort over time") +
+  theme_classic() +
+  scale_x_continuous(limits = year_range, breaks = seq(min(year_range), max(year_range), by = 2),  
+                     guide = guide_axis(angle = 45)) +
+  geom_vline(xintercept = 2013, linetype = "dotted", size = 0.6) +
+  annotate(geom = "text", label = "SSW", x = 2010.5, y = 0.39, size = 2.5) +
+  annotate("segment", x = 2010.8, y = 0.375, xend = 2012.7, yend = 0.32,
+           arrow = arrow(type = "closed", length = unit(0.02, "npc"))) +
+  theme_bw() + base_theme +
+  scale_fill_manual(values = c("mussels" = "orange", "urchins" = "purple"),
+                    labels = c("mussels" = "Mussels", "urchins" = "Sea urchins")) +
+  scale_color_manual(values = c("mussels" = "orange", "urchins" = "purple"),
+                     labels = c("mussels" = "Mussels", "urchins" = "Sea urchins")) 
+
+p
+
+
+#Plot energetic intake (Figure 5)-----------------------------------------------
+
+# 
 color_scheme_set("mix-viridis-orange-purple")
 mcmc_trace(mcmc_array,regex_pars=("sig_L"))
 mcmc_trace(mcmc_array,regex_pars=("sig_E"))
@@ -218,26 +298,63 @@ for(j in 1:3){
   
 }
 
+base_theme2 <-  theme(axis.text=element_text(size=10, color = "black"),
+                     axis.title=element_text(size=11,color = "black"),
+                     plot.tag=element_text(size=10,color = "black"),
+                     plot.title=element_text(size=11,color = "black", face = "bold"),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     #panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key.size = unit(0.4, "cm"), 
+                     #legend.key = element_rect(fill = "white"), # Set it to transparent
+                     legend.spacing.y = unit(0.4, "cm"),  
+                     legend.text=element_text(size=10,color = "black"),
+                     legend.title=element_blank(),
+                     #legend.key.height = unit(0.1, "cm"),
+                     #legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=9, face = "bold",color = "black", hjust=0),
+                     strip.background = element_blank())
+
 ii = which(df_Erate_est$Scenario == "Actual")
 tmp = df_Erate_est[ii,c(1,3,4,5)]
-plt_Erate = ggplot(df_Erate_est,aes(x=Year,y=Erate)) +
-  geom_ribbon(aes(ymin=Erate_lo,ymax=Erate_hi,fill=Scenario),alpha=.3) +
-  geom_line(aes(color=Scenario)) + 
-  geom_ribbon(data=tmp,aes(ymin=Erate_lo,ymax=Erate_hi),alpha=.1) +
-  geom_line(data=tmp,aes(x=Year,y=Erate),linetype="dotdash") + 
-  geom_line(data=tmp,aes(x=Year,y=Erate_lo),linetype="dotted") + 
-  geom_line(data=tmp,aes(x=Year,y=Erate_hi),linetype="dotted") + 
-  geom_vline(xintercept = 2013, linetype="dashed") +
-  labs(y="Energy Intake") +
-  ggtitle("Effect of urchin and mussel increase on Energy Intake",
-          subtitle = paste0("Scenario 1 = no urchin increase, ",
-                            "Scenario 2 = no mussel increase, ",
-                            "Scenario 3 = no urchin or mussel increase")) +
-  theme_classic() + 
+
+
+df_Erate_est$Scenario2 <- factor(df_Erate_est$Scenario, levels = c("Actual", "Scenario 1", "Scenario 2", "Scenario 3"),
+                                labels = c("Observed energetic intake",
+                                           "Scenario 1: no sea urchin increase",
+                                           "Scenario 2: no mussel increase",
+                                           "Scenario 3: no sea urchin or mussel increase"))
+
+plt_Erate = ggplot(df_Erate_est, aes(x = Year, y = Erate)) +
+  geom_ribbon(aes(ymin = Erate_lo, ymax = Erate_hi, fill = Scenario), alpha = 0.3) +
+  geom_line(aes(color = Scenario)) + 
+  geom_ribbon(data = tmp, aes(ymin = Erate_lo, ymax = Erate_hi), alpha = 0.1) +
+  geom_line(data = tmp, aes(x = Year, y = Erate), linetype = "dotdash") + 
+  geom_line(data = tmp, aes(x = Year, y = Erate_lo), linetype = "dotted") + 
+  geom_line(data = tmp, aes(x = Year, y = Erate_hi), linetype = "dotted") + 
+  geom_vline(xintercept = 2013, linetype = "dashed") +
+  labs(y = "Energy intake \n(Kcal / min)", 
+       title = "") +
   scale_fill_brewer(palette = "Dark2") +
   scale_color_brewer(palette = "Dark2") +
-  facet_grid(rows = vars(Scenario))
-print(plt_Erate)
+  facet_wrap(~Scenario2, ncol = 1, strip.position = "top") +  
+  scale_x_continuous(breaks = seq(2006, max(df_Erate_est$Year), by = 3)) +  # Label every other year
+  theme_classic() + base_theme2 + 
+  theme(legend.position = "none")
+
+plt_Erate
+
+
+ggsave(plt_Erate, filename = file.path(figdir, "Fig4_energetic_intake.png"), 
+      width =4, height = 7, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
+
+
+
+
 
 ii = which(df_Erate_est$Scenario == "Actual")
 tmp = df_Erate_est[ii,c(1,6,7,8)]
@@ -259,3 +376,12 @@ plt_U_pred = ggplot(df_Erate_est,aes(x=Year,y=U_prd)) +
   scale_color_brewer(palette = "Set1") +
   facet_grid(rows = vars(Scenario))
 print(plt_U_pred)
+
+
+
+
+
+
+
+
+
