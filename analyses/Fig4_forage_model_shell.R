@@ -120,7 +120,6 @@ source(here::here("analyses","cmdstan_sumstats.r"))
 #
 
 
-
 ################################################################################
 #Plot Figure 4 - proportion foraging effort
 
@@ -268,6 +267,11 @@ plt_trends3 = ggplot(filter(df_prey_est,Year>2007 & Prey != "other"),aes(x=Year,
   facet_wrap(vars(Prey),nrow = 5, scales = "free")
 print(plt_trends3)
 
+
+
+################################################################################
+#Plot Figure 5 - energetic intake
+
 ii = which(startsWith(vn,"Ebar["))
 iiu = which(startsWith(vn,"U_prd[")) 
 iim = which(startsWith(vn,"M_prd[")) 
@@ -282,10 +286,6 @@ df_Erate_est = data.frame(Year=Years,Scenario=rep("Actual",N),
                           M_prd=sumstats$mean[iim],
                           M_prd_lo=sumstats$`5%`[iim], 
                           M_prd_hi=sumstats$`95%`[iim] )
-
-
-################################################################################
-#Plot Figure 5 - energetic intake
 
 for(j in 1:3){
   ii = which(startsWith(vn,paste0("Ebar_alt[",j)))
@@ -374,8 +374,7 @@ ggsave(plt_Erate, filename = file.path(figdir, "Fig5_energetic_intake.png"),
 
 
 ################################################################################
-#Plot Figure SX urchin predation
-
+#Plot Figure S3 urchin predation
 
 
 ii = which(df_Erate_est$Scenario == "Actual")
@@ -411,6 +410,36 @@ print(plt_U_pred)
 
 ggsave(plt_U_pred, filename = file.path(figdir, "FigS3_urchin_consumption.png"), 
        width =4, height = 7, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
+
+
+################################################################################
+#Update tables
+
+ii_Ebar <- which(startsWith(rownames(sumstats), "Ebar["))
+ii_Ebar <- ii_Ebar[1:K]  
+
+# Extract energy intake values
+E_mean <- sumstats$mean[ii_Ebar]
+E_sd <- sumstats$sd[ii_Ebar]
+E_lo <- sumstats$`5%`[ii_Ebar]
+E_hi <- sumstats$`95%`[ii_Ebar]
+
+pre_effort_mean <- colMeans(pi_obs[pre_index,]) * 100  
+pre_effort_sd <- apply(pi_obs[pre_index,], 2, sd) * 100
+post_effort_mean <- colMeans(pi_obs[post_index,]) * 100
+post_effort_sd <- apply(pi_obs[post_index,], 2, sd) * 100
+
+df_prey_table <- data.frame(
+  PreyType = PreyTypes,
+  E_kcal_m = E_mean,
+  E_SD = E_sd,
+  E_Lower95 = E_lo,
+  E_Upper95 = E_hi,
+  Pre2013_Effort = pre_effort_mean,
+  Pre2013_Effort_SD = pre_effort_sd,
+  Post2013_Effort = post_effort_mean,
+  Post2013_Effort_SD = post_effort_sd
+)
 
 
 
