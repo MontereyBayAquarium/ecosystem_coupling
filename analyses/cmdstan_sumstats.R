@@ -30,19 +30,39 @@
 #   )
 # )
 # ------------------------------------------------------
-sumstats = as.data.frame(fit$summary(variables = parms))
+
+if (!exists("select_chains")) {
+  fit_draws = fit$draws(parms) 
+}else{
+  fit_draws = fit$draws(parms) %>% subset_draws(chain=select_chains)
+}
+
+# sumstats = fit$draws(parms) %>% subset_draws(chain=select_chains) %>%  
+sumstats = fit_draws %>% 
+  summarise_draws(mean, mcse = mcse_mean, sd, 
+                  ~quantile(.x, probs = c(0.025, 0.05, .5, .95, .975), na.rm=T),
+                  N_eff = ess_bulk, rhat)
+sumstats = as.data.frame(sumstats)
 row.names(sumstats) = sumstats$variable; sumstats = sumstats[,-1] 
-tmp = as.data.frame(fit$summary(variables = parms, mcse = mcse_mean, 
-                                ~quantile(.x, probs = c(0.025, 0.975))))
-sumstats$mcse = tmp$mcse 
-sumstats$q2.5 = tmp$`2.5%` 
-sumstats$q97.5 = tmp$`97.5%`
-sumstats$q50 = sumstats$median 
-sumstats$N_eff = sumstats$ess_bulk
-col_order = c("mean","mcse","sd","q2.5","q5","q50","q95","q97.5","N_eff","rhat")
-sumstats = sumstats[, col_order]
-mcmc = as_draws_matrix(fit$draws(variables = parms))
-vn = colnames(mcmc); vns = row.names(sumstats)
+#
+mcmc = as_draws_matrix(fit_draws,variables = parms)
 Nsims = nrow(mcmc)
-rm(tmp,col_order)   # remove temporary variables
+mcmc_array = as_draws_array(fit_draws,variables = parms)
+vn = colnames(mcmc); vns = row.names(sumstats)
+#
+# sumstats = as.data.frame(fit$summary(variables = parms))
+# row.names(sumstats) = sumstats$variable; sumstats = sumstats[,-1] 
+# tmp = as.data.frame(fit$summary(variables = parms, mcse = mcse_mean, 
+#                                 ~quantile(.x, probs = c(0.025, 0.975), na.rm=T)))
+# sumstats$mcse = tmp$mcse 
+# sumstats$q2.5 = tmp$`2.5%` 
+# sumstats$q97.5 = tmp$`97.5%`
+# sumstats$q50 = sumstats$median 
+# sumstats$N_eff = sumstats$ess_bulk
+# col_order = c("mean","mcse","sd","q2.5","q10","q50","q90","q97.5","N_eff","rhat")
+# sumstats = sumstats[, col_order]
+# mcmc = as_draws_matrix(fit$draws(variables = parms))
+# vn = colnames(mcmc); vns = row.names(sumstats)
+# Nsims = nrow(mcmc)
+# rm(tmp,col_order)   # remove temporary variables
 # rm(mod,fit)       # can also remove mod & fit from memory if no longer needed 

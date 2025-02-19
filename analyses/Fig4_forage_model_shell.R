@@ -1,8 +1,6 @@
 
 
 
-
-
 rm(list=ls())
 
 ################################################################################
@@ -88,12 +86,12 @@ nburnin = 300
 cores = detectCores()
 ncore = max(3,min(5,cores-2))
 Niter = round(nsamples/ncore)
-fitmodel = file.path("analyses/Foraging_fit.stan")
+fitmodel = here::here("analyses","Foraging_fit.stan")
 #
 stan.data = list(N=N,K=K,pi_obs=pi_obs,tau=tau,mu_obs=mu_E,Vadj=Vadj,
                  N_base=N_base,log_G_pri=log_G_pri)
-                 # urcP_obs=urcP_obs,urcR_obs=urcR_obs,mus_obs=mus_obs,
-                 # DP_flag=DP_flag,DR_flag=DR_flag,DM_flag=DM_flag,
+# urcP_obs=urcP_obs,urcR_obs=urcR_obs,mus_obs=mus_obs,
+# DP_flag=DP_flag,DR_flag=DR_flag,DM_flag=DM_flag,
 #
 parms = c("sig_L","sig_E","Ebar","Ebar_alt","pi","delta",
           "U_prd","M_prd","U_prd_alt","M_prd_alt")
@@ -118,12 +116,11 @@ suppressMessages(
 # tmp = fit$output(); tmp[[1]][40:80]
 # generate summary stats (sumstats, mcmc matrix)
 # select_chains = seq(1,ncore); select_chains = select_chains[-c(1:2)]
-source(here::here("analyses","cmdstan_sumstats.R"))
-
+source(here::here("analyses","cmdstan_sumstats.r"))
 #
 # Examine results -----------------------------------------------
 color_scheme_set("mix-viridis-orange-purple")
-mcmc_trace(mcmc_array,variable=("sig_L"))
+mcmc_trace(mcmc_array,regex_pars=("sig_L"))
 mcmc_trace(mcmc_array,regex_pars=("sig_E"))
 # mcmc_trace(mcmc_array,pars="alpha")
 # mcmc_trace(mcmc_array,regex_pars="delta")
@@ -146,8 +143,8 @@ df_prey_est$Prey = factor(df_prey_est$Prey, levels = Preynames)
 for(i in 1:(K-1)){
   ii = which(startsWith(vn,"delta[") & endsWith(vn,paste0(",",i,"]")))
   Dns = sumstats$mean[ii]
-  Dns_lo = sumstats$`q5`[ii] 
-  Dns_hi = sumstats$`q95`[ii]
+  Dns_lo = sumstats$`5%`[ii] 
+  Dns_hi = sumstats$`95%`[ii]
   df_pr_est = data.frame(Prey = rep(Preynames[i],N), Year=Years,
                          Dns=Dns,Dns_lo=Dns_lo,Dns_hi=Dns_hi)
   plt_trends[[i]] = ggplot(filter(df_pr_est,Year>2007),aes(x=Year,y=Dns)) +
@@ -193,14 +190,14 @@ iiu = which(startsWith(vn,"U_prd["))
 iim = which(startsWith(vn,"M_prd[")) 
 df_Erate_est = data.frame(Year=Years,Scenario=rep("Actual",N),
                           Erate=sumstats$mean[ii],
-                          Erate_lo=sumstats$`q5`[ii], 
-                          Erate_hi=sumstats$`q95`[ii],
+                          Erate_lo=sumstats$`5%`[ii], 
+                          Erate_hi=sumstats$`95%`[ii],
                           U_prd=sumstats$mean[iiu],
-                          U_prd_lo=sumstats$`q5`[iiu], 
-                          U_prd_hi=sumstats$`q95`[iiu],
+                          U_prd_lo=sumstats$`5%`[iiu], 
+                          U_prd_hi=sumstats$`95%`[iiu],
                           M_prd=sumstats$mean[iim],
-                          M_prd_lo=sumstats$`q5`[iim], 
-                          M_prd_hi=sumstats$`q95`[iim] )
+                          M_prd_lo=sumstats$`5%`[iim], 
+                          M_prd_hi=sumstats$`95%`[iim] )
 
 for(j in 1:3){
   ii = which(startsWith(vn,paste0("Ebar_alt[",j)))
@@ -210,14 +207,14 @@ for(j in 1:3){
                        data.frame(Year=Years,
                                   Scenario=rep(paste0("Scenario ",j),N),
                                   Erate=sumstats$mean[ii],
-                                  Erate_lo=sumstats$`q5`[ii], 
-                                  Erate_hi=sumstats$`q95`[ii],
+                                  Erate_lo=sumstats$`5%`[ii], 
+                                  Erate_hi=sumstats$`95%`[ii],
                                   U_prd=sumstats$mean[iiu],
-                                  U_prd_lo=sumstats$`q5`[iiu], 
-                                  U_prd_hi=sumstats$`q95`[iiu],
+                                  U_prd_lo=sumstats$`5%`[iiu], 
+                                  U_prd_hi=sumstats$`95%`[iiu],
                                   M_prd=sumstats$mean[iim],
-                                  M_prd_lo=sumstats$`q5`[iim], 
-                                  M_prd_hi=sumstats$`q95`[iim] ) )
+                                  M_prd_lo=sumstats$`5%`[iim], 
+                                  M_prd_hi=sumstats$`95%`[iim] ) )
   
 }
 
