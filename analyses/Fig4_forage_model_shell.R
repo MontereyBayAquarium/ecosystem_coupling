@@ -330,9 +330,14 @@ df_Erate_est$Scenario2 <- factor(df_Erate_est$Scenario, levels = c("Actual", "Sc
                                            "Scenario 2: no mussel increase",
                                            "Scenario 3: no sea urchin or mussel increase"))
 
+
+
+dark2_colors <- RColorBrewer::brewer.pal(8, "Dark2")  
+dark2_colors  
+
 plt_Erate = ggplot(df_Erate_est, aes(x = Year, y = Erate)) +
   geom_ribbon(aes(ymin = Erate_lo, ymax = Erate_hi, fill = Scenario), alpha = 0.3) +
-  geom_line(aes(color = Scenario)) + 
+  geom_line(aes(color = Scenario), lwd=0.6) + 
   geom_ribbon(data = tmp, aes(ymin = Erate_lo, ymax = Erate_hi), alpha = 0.1) +
   geom_line(data = tmp, aes(x = Year, y = Erate), linetype = "dotdash") + 
   geom_line(data = tmp, aes(x = Year, y = Erate_lo), linetype = "dotted") + 
@@ -340,15 +345,22 @@ plt_Erate = ggplot(df_Erate_est, aes(x = Year, y = Erate)) +
   geom_vline(xintercept = 2013, linetype = "dashed") +
   labs(y = "Energy intake \n(Kcal / min)", 
        title = "") +
-  scale_fill_brewer(palette = "Dark2") +
-  scale_color_brewer(palette = "Dark2") +
+  scale_fill_manual(values = c("Actual" = "gray90", 
+                               "Scenario 1" = dark2_colors[2],  # Orange
+                               "Scenario 2" = dark2_colors[3],  # Purple
+                               "Scenario 3" = dark2_colors[4])) +  # Pink
+  scale_color_manual(values = c("Actual" = "black", 
+                                "Scenario 1" = dark2_colors[2],  
+                                "Scenario 2" = dark2_colors[3],  
+                                "Scenario 3" = dark2_colors[4])) +
   facet_wrap(~Scenario2, ncol = 1, strip.position = "top") +  
   scale_x_continuous(breaks = seq(2006, max(df_Erate_est$Year), by = 2),
                      guide = guide_axis(angle = 45)) + 
-  theme_classic() + base_theme2 + 
+  theme_classic() + base_theme2 +  
   theme(legend.position = "none")
 
-plt_Erate
+print(plt_Erate)
+
 
 
 ggsave(plt_Erate, filename = file.path(figdir, "Fig5_energetic_intake.png"), 
