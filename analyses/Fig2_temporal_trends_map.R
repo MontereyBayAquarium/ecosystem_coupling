@@ -641,7 +641,7 @@ o
 #combine plots
 
 f <- gridExtra::grid.arrange(o,m,p, ncol=1) 
-p_final <- gridExtra::grid.arrange(f, g0, ncol = 2, widths = c(1.2,1))
+p_final <- gridExtra::grid.arrange(f, g0, ncol = 2, widths = c(1.15,1))
 
 #p_final
 
