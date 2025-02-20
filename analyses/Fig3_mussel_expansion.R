@@ -106,46 +106,51 @@ print(t_test_result)
 #plot heatmap by site
 
 
-tile_theme <-  theme(axis.text=element_text(size=7, color = "black"),
-                     axis.title=element_text(size=8,color = "black"),
-                     plot.tag=element_text(size=8,color = "black"),
-                     plot.title=element_text(size=8,color = "black", face = "bold"),
+tile_theme <-  theme(axis.text=element_text(size=9, color = "black"),
+                     axis.title=element_text(size=9,color = "black"),
+                     plot.tag=element_text(size=9,color = "black"),
+                     plot.title=element_text(size=9,color = "black", face = "bold"),
                      # Gridlines
                      panel.grid.major = element_blank(), 
                      panel.grid.minor = element_blank(),
                      panel.background = element_blank(), 
                      axis.line = element_line(colour = "black"),
                      # Legend
-                     legend.key.size = unit(0.3, "cm"), 
+                     legend.key.size = unit(0.5, "cm"), 
                      legend.key = element_rect(fill=alpha('blue', 0)),
                      legend.spacing.y = unit(0.1, "cm"),  
-                     legend.text=element_text(size=5,color = "black"),
+                     legend.text=element_text(size=8,color = "black"),
                      legend.title=element_text(size=6,color = "black"),
                      #legend.key.height = unit(0.1, "cm"),
                      legend.background = element_rect(fill=alpha('blue', 0)),
                      #facets
-                     strip.text = element_text(size=7, face = "bold",color = "black", hjust=0),
+                     strip.text = element_text(size=8, face = "bold",color = "black", hjust=0),
                      strip.background = element_blank())
 
 
-# Create a heatmap with equal tile size and color points observed only in 'after' differently
+
+# Rename factor levels in the dataset
+heatmap_data <- heatmap_data %>%
+  mutate(Period = recode(Period, "Pre-SSW" = "Before", "Post-SSW" = "After"))
+
 p <- ggplot(heatmap_data, aes(x = transect_seq, y = location, fill = Period)) +
-  geom_tile(width=1, height=1) +  # Set width and height to 1 for equal tile size
-  scale_fill_manual(values = c("Pre-SSW" = "navyblue", "Post-SSW" = "indianred")) +
+  geom_tile(width=1, height=1) +  
+  scale_fill_manual(values = c("Before" = "navyblue", "After" = "indianred")) +  
   labs(title = "",
        x = "Transect number",
        y = "Distance from high to \nlow intertidal (meters from baseline)",
        fill = NULL,
        tag = "A") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_y_reverse()+  # Flip the y-axis
-  #ggforce::facet_col(vars(intertidal_sitename), scales = "free") +
+  scale_y_reverse() +  
   facet_grid(.~intertidal_sitename) +
-  coord_fixed()+
-  theme_bw()+tile_theme  + theme(legend.position = "top")+
-  theme(plot.margin = margin(0, 0, 0, 0, "cm")) #reduce right margin
+  coord_fixed() +
+  theme_bw() + tile_theme + 
+  theme(legend.position = "top",
+        plot.margin = margin(0, 0, 0, 0, "cm")) 
+
 p
+
 
 
 # Create arrow scheme
@@ -178,10 +183,10 @@ g1_full
 
 
 # Theme
-my_theme <-  theme(axis.text=element_text(size=8,color = "black"),
+my_theme <-  theme(axis.text=element_text(size=9,color = "black"),
                    axis.title=element_text(size=9,color = "black"),
-                   plot.tag=element_text(size=8,color = "black"),
-                   plot.title=element_text(size=8,color = "black", face = "bold"),
+                   plot.tag=element_text(size=9,color = "black"),
+                   plot.title=element_text(size=9,color = "black", face = "bold"),
                    # Gridlines
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -196,26 +201,48 @@ my_theme <-  theme(axis.text=element_text(size=8,color = "black"),
                    #legend.key.height = unit(0.1, "cm"),
                    #legend.background = element_rect(fill=alpha('blue', 0)),
                    #facets
-                   strip.text = element_text(size=7, face = "bold",color = "black", hjust=0),
+                   strip.text = element_text(size=8, face = "bold",color = "black", hjust=0),
                    strip.background = element_blank())
 
-# Create a KDE plot for the mean size frequency distribution and overlay them
-g2 <- ggplot(DatU, aes(x = as.numeric(size_bin), fill = ssw_period, color = ssw_period)) +
+# Convert size_bin to numeric safely
+DatU <- DatU %>%
+  mutate(size_bin = as.numeric(as.character(size_bin))) %>%
+  filter(!is.na(size_bin))  # Remove NAs before plotting
+
+
+g2 <- ggplot(DatU, aes(x = size_bin, fill = ssw_period, color = ssw_period)) +
   geom_density(alpha = 0.8, adjust = 1.5) +
-  labs(x = "Size \n(mm)", y = "Frequency", title = "Size frequency", tag = "C") +
+  geom_boxplot(data = DatU %>% filter(ssw_period == "Before"), 
+               aes(x = size_bin, y = 1),   
+               width = 0.002, alpha = 0.5, outlier.shape = NA,
+               position = position_nudge(y = -0.965)) +  
+  geom_boxplot(data = DatU %>% filter(ssw_period == "After"),  
+               aes(x = size_bin, y = 0.996),   
+               width = 0.002, alpha = 0.5, outlier.shape = NA,
+               position = position_nudge(y = -0.965)) +  
+  labs(x = "Size \n(mm)", y = "", title = "Size frequency", tag = "C") +
   scale_x_continuous(limits = c(0, 100), breaks = seq(0, 120, by = 20)) +
-  scale_fill_manual(values=c("indianred","navyblue"))+
-  scale_color_manual(values=c("indianred","navyblue"))+
-  #geom_vline(data = mean_size_by_period, aes(xintercept = mean_size, color = ssw_period), 
-  #          linetype = "dotted", size = 1) +
+  scale_y_continuous(breaks = NULL) +  # Remove y-axis labels
+  scale_fill_manual(values=c("indianred","navyblue")) +
+  scale_color_manual(values=c("indianred","navyblue")) +
   theme_bw() + my_theme + theme(axis.title.y = element_blank())
+
 g2
+
 
 
 
 # Create a KDE plot for the mean size frequency distribution and overlay them
 g3 <- ggplot(mus_cov_period, aes(x = as.numeric(percent_cover), fill = ssw_period, color = ssw_period)) +
   geom_density(alpha = 0.8, adjust = 1.5) +
+  geom_boxplot(data = mus_cov_period %>% filter(ssw_period == "Before"), 
+               aes(x = percent_cover, y = 1.05),   
+               width = 0.005, alpha = 0.5, outlier.shape = NA,
+               position = position_nudge(y = -0.965)) +  
+  geom_boxplot(data = mus_cov_period %>% filter(ssw_period == "After"),  
+               aes(x = percent_cover, y = 1.04),   
+               width = 0.005, alpha = 0.5, outlier.shape = NA,
+               position = position_nudge(y = -0.965)) +  
   labs(x = "Percent \ncover", y = "Frequency", title = "Percent cover", tag = "D") +
   scale_x_continuous(limits = c(0, 70), breaks = seq(0, 70, by = 10)) +
   scale_fill_manual(values=c("indianred","navyblue"))+
@@ -230,6 +257,14 @@ g3
 # Create a KDE plot for the mean size frequency distribution and overlay them
 g4 <- ggplot(mus_pos_build1, aes(x = as.numeric(location), fill = ssw_period, color = ssw_period)) +
   geom_density(alpha = 0.8, adjust = 1.5) +
+  geom_boxplot(data = mus_pos_build1 %>% filter(ssw_period == "Before"), 
+               aes(x = as.numeric(location), y = 1.09),   
+               width = 0.005, alpha = 0.5, outlier.shape = NA,
+               position = position_nudge(y = -0.965)) +  
+  geom_boxplot(data = mus_pos_build1 %>% filter(ssw_period == "After"),  
+               aes(x = as.numeric(location), y = 1.08),   
+               width = 0.005, alpha = 0.5, outlier.shape = NA,
+               position = position_nudge(y = -0.965)) +  
   labs(x = "Mussel depth \n(distance high to low intertidal)", y = "Frequency", title = "Depth distribution", tag = "B") +
   scale_x_continuous(limits = c(0, 30), breaks = seq(0, 30, by = 10)) +
   scale_fill_manual(values=c("indianred","navyblue"))+
@@ -244,85 +279,12 @@ m <- ggpubr::ggarrange(g4, g2,g3, common.legend = TRUE, nrow=1, legend = "none")
 
 
 n <- gridExtra::grid.arrange(g1_full, m, nrow=2, heights = c(0.65,0.25))
+n
 
 
-
-ggsave(n, filename = file.path(figdir, "Fig3_mussel_expansion.png"), 
+ggsave(n, filename = file.path(figdir, "Fig3_mussel_expansion2.png"), 
       width = 7, height = 7.5, units = "in", dpi = 600) #last write 26 Sept 2024
 
-
-################################################################################
-#plot boxplot of mussel distribution
-
-base_theme <-  theme(axis.text=element_text(size=11, color = "black"),
-                     axis.title=element_text(size=12,color = "black"),
-                     plot.tag=element_text(size=9,color = "black"),
-                     plot.title=element_text(size=10,color = "black", face = "bold"),
-                     # Gridlines
-                     panel.grid.major = element_blank(), 
-                     panel.grid.minor = element_blank(),
-                     panel.background = element_blank(), 
-                     axis.line = element_line(colour = "black"),
-                     # Legend
-                     legend.key.size = unit(0.5, "cm"), 
-                     #legend.key = element_rect(fill = "white"), # Set it to transparent
-                     legend.spacing.y = unit(0.5, "cm"),  
-                     legend.text=element_text(size=10,color = "black"),
-                     legend.title=element_blank(),
-                     #legend.key.height = unit(0.1, "cm"),
-                     #legend.background = element_rect(fill=alpha('blue', 0)),
-                     #facets
-                     strip.text = element_text(size=10, face = "bold",color = "black", hjust=0),
-                     strip.background = element_blank())
-
-
-# plot depth distribution
-s1 <- ggplot(heatmap_data, aes(x = Period, y = location, fill = Period)) +
-  geom_boxplot(show.legend = FALSE) +
-  scale_fill_manual(values = c("Pre-SSW" = "navyblue", "Post-SSW" = "indianred")) +
-  labs(title = "",
-       x = "Period",
-       y = "Distance (meters from high intertidal)",
-       fill = "Period",
-       tag = "A") +
-  theme_minimal() +
-  ggsignif::geom_signif(comparisons = list(c("Pre-SSW", "Post-SSW")),
-                        map_signif_level = TRUE,
-                        tip_length = c(0.01, 0.01),
-                        textsize=5)+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme(legend.position = "none") +
-  theme_bw() + base_theme
-
-# plot size
-s2 <- ggplot(DatU %>%
-               rename(Period = ssw_period) %>%
-               mutate(Period = factor(Period, 
-                                      levels = c("Before", "After"), 
-                                      labels = c("Pre-SSW", "Post-SSW"))), 
-             aes(x = Period, y = size_bin, fill = Period)) +
-  geom_boxplot(show.legend = FALSE) +
-  scale_fill_manual(values = c("Pre-SSW" = "navyblue", "Post-SSW" = "indianred")) +
-  labs(title = "",
-       x = "Period",
-       y = "Mussel size (mm)",
-       fill = "Period",
-       tag = "B") +
-  theme_minimal() +
-  ggsignif::geom_signif(comparisons = list(c("Pre-SSW", "Post-SSW")),
-                        map_signif_level = TRUE,
-                        tip_length = c(0.01, 0.01),
-                        textsize=5) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  theme(legend.position = "none") +
-  theme_bw() + base_theme
-
-s2
-
-s <- ggpubr::ggarrange(s1, s2, nrow=1)
-
-ggsave(s, filename = file.path(figdir, "FigS1_mussel_boxplots.png"), 
-       width =7, height = 5, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 
 
