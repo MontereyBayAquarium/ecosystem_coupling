@@ -192,11 +192,11 @@ p <- ggplot(data = df_diet, aes(x = Year, group = Prey_type)) +
 
 p
 
-ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"), 
-       width =5, height = 3, units = "in", dpi = 600, bg = "white")
+#ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"), 
+ #      width =5, height = 3, units = "in", dpi = 600, bg = "white")
 
 ################################################################################
-#Plot posteriors
+#Plot posteriors and diagnostics
 
 color_scheme_set("mix-viridis-orange-purple")
 mcmc_trace(mcmc_array,regex_pars=("sig_L"))
@@ -237,6 +237,23 @@ for(i in 1:(K-1)){
 }
 gridExtra::grid.arrange(grobs = plt_trends)
 
+
+
+
+# Compute diagnostics
+summary_stats <- summarize_draws(mcmc)
+
+# 2️⃣ R-hat Distribution
+rhat_plot <- mcmc_rhat(summary_stats$rhat) +
+  ggtitle("R-hat Convergence")
+
+# 3️⃣ Effective Sample Size (ESS)
+ess_plot <- mcmc_neff(summary_stats$ess_bulk) +
+  ggtitle("Effective Sample Size")
+
+
+
+
 ################################################################################
 #Plot alt prey
 
@@ -253,20 +270,48 @@ plt_trends2 = ggplot(filter(df_prey_est,Year>2007 & (Prey == "urchin" | Prey == 
   facet_wrap(vars(Prey),nrow = 2)
 print(plt_trends2)
 
-new_palette <- brewer.pal(name="Paired",n=10)[c(4,10,1,6,8,3,5,7,2,9)]
-plt_trends3 = ggplot(filter(df_prey_est,Year>2007 & Prey != "other"),aes(x=Year,y=Dns)) + # & Prey != "urchin" & Prey != "mussel" 
-  geom_ribbon(aes(ymin=Dns_lo,ymax=Dns_hi,fill=Prey),alpha=.25) +
-  geom_line(aes(color=Prey),linewidth=1.1) +
+
+
+base_theme <- theme(axis.text=element_text(size=12,color = "black"),
+                     axis.title=element_text(size=13,color = "black"),
+                     plot.tag=element_text(size=11,color = "black"),
+                     plot.title=element_text(size=11,color = "black", face = "bold"),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key.size = unit(0.3, "cm"), 
+                     #legend.key = element_rect(fill = "white"), # Set it to transparent
+                     legend.spacing.y = unit(0.1, "cm"),  
+                     legend.text=element_text(size=9,color = "black"),
+                     legend.title=element_blank(),
+                     #legend.key.height = unit(0.1, "cm"),
+                     #legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=10, face = "bold",color = "black", hjust=0),
+                     strip.background = element_blank())
+
+plt_trends3 = ggplot(filter(df_prey_est %>%
+                              mutate(Prey = str_replace_all(Prey, "_", " ") %>%  
+                                       str_to_sentence()) 
+                            ,Year>2007 & Prey != "other"),aes(x=Year,y=Dns)) + # & Prey != "urchin" & Prey != "mussel" 
+  geom_ribbon(aes(ymin=Dns_lo,ymax=Dns_hi),alpha=.25) +
+  geom_line(linewidth=1.1) +
   # ylab(expression(paste("logit (", lambda,")"))) +
   geom_vline(xintercept = 2013, linetype="dashed") +
   ylab("Density") +
-  ggtitle(paste0("Trends in Prey density, alternative prey")) +
-  theme_classic() + 
+  ggtitle(paste0("")) +
   scale_color_manual(values = new_palette) +
   scale_fill_manual(values = new_palette) +
-  facet_wrap(vars(Prey),nrow = 5, scales = "free")
+  facet_wrap(vars(Prey),nrow = 5, scales = "free")+
+  theme_classic() + base_theme
+
 print(plt_trends3)
 
+ggsave(plt_trends3, filename = file.path(figdir, "FigS2_prey_density.png"), 
+       width =7, height = 8, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
 
 
 ################################################################################
