@@ -4,7 +4,7 @@
 rm(list=ls())
 
 #required packages
-librarian::shelf(tidyverse, sf, zoo, minpack.lm)
+librarian::shelf(tidyverse, sf, zoo, minpack.lm, ggsignif)
 
 #set directories 
 localdir <- here::here("output")
@@ -70,7 +70,9 @@ combined_data <- bind_rows(census_join_summary, mus_build2, pis_build2) %>%
                     TRUE ~ category
                   ),
                   #set order
-                  category = factor(category, levels = c("Total independent otters","Mussels","P. ochraceus"))
+                  category = factor(category, levels = c("Total independent otters","Mussels","P. ochraceus")),
+                  period = ifelse(year <= 2013, "Before","After"),
+                  period = factor(period, levels = c("Before","After"))
                   )
                   
 ################################################################################
@@ -211,7 +213,7 @@ g <- ggplot() +
     #legend.justification = "right",  # Align the legend to the right
     #legend.box = "vertical",  # Box style for the legend
     #legend.margin = margin(t = -10, r = 10),  # Adjust the top and right margins for positioning
-    axis.text = element_blank(),
+   # axis.text = element_blank(),
     legend.background = element_rect(fill='transparent'),
     legend.key = element_rect(fill='transparent')
   )
@@ -432,10 +434,55 @@ p1 <- p +
 #p1
 
 
+
+# Filter data
+plot_data <- combined_data %>% filter(category == "P. ochraceus")
+
+# Perform t-test
+t_test <- t.test(response ~ period, data = plot_data)
+
+# Categorize p-value for display
+p_label <- case_when(
+  t_test$p.value < 0.001 ~ "p < 0.001",
+  t_test$p.value < 0.01  ~ "p < 0.01",
+  t_test$p.value < 0.05  ~ "p < 0.05",
+  TRUE                   ~ "n.s."  # Not significant
+)
+
+
+# Apply the buffer to y-axis limits
+p2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+  geom_jitter(width = 0.1, alpha = 0.4, color = "black", size=0.7) +
+  geom_signif(comparisons = list(c("Before", "After")), 
+              test = "t.test", 
+              map_signif_level = TRUE, 
+              tip_length = 0.02, 
+              textsize = 3,
+              y_position = max(plot_data$response)*1.1) +   
+  theme_minimal() +
+  theme_bw() +
+  base_theme +
+  scale_fill_manual(values = c("Before" = "#E377C2", "After" = "#E377C2")) +
+  labs(x = "Period", y = "", title = "") +
+  #annotate("text", x = 2.8, y = max(plot_data$response)*1.2, 
+   #        label = p_label, size = 2.5, hjust = 1) +  # Adds formatted p-value
+  scale_y_continuous(limits = c(min(plot_data$response), max(plot_data$response)*1.2)) +  # Adjusted y-axis limits
+  theme(legend.position = "none", plot.title = element_text(face = "bold"))
+
+p2
+
+
+
+p <- ggpubr::ggarrange(p1, p2, widths = c(1.9,1))
+p
+
+
+
 ################################################################################
 #plot mussels
 
-p2 <- ggplot(combined_data %>% filter(category == "Mussels"), aes(x = year, y = response)) +
+m1 <- ggplot(combined_data %>% filter(category == "Mussels"), aes(x = year, y = response)) +
   geom_point(alpha = 0.4, color = "#FF7F0E", show.legend = FALSE, size=1) +
   stat_smooth(geom = "line", span = 0.6, color = "#FF7F0E", show.legend = FALSE, lwd=0.7) +
   stat_smooth(
@@ -462,7 +509,51 @@ p2 <- ggplot(combined_data %>% filter(category == "Mussels"), aes(x = year, y = 
   labs(x = "", y = "Percent cover", title = "Mussels", tag = "B") +
   theme(axis.text.x = element_blank())
 
-#p2
+#m1
+
+
+# Filter data
+plot_data <- combined_data %>% filter(category == "Mussels")
+
+# Perform t-test
+t_test <- t.test(response ~ period, data = plot_data)
+
+# Categorize p-value for display
+p_label <- case_when(
+  t_test$p.value < 0.001 ~ "p < 0.001",
+  t_test$p.value < 0.01  ~ "p < 0.01",
+  t_test$p.value < 0.05  ~ "p < 0.05",
+  TRUE                   ~ "n.s."  # Not significant
+)
+
+
+# Boxplot with significance bracket
+m2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+  geom_jitter(width = 0.1, alpha = 0.4, color = "black", size = 0.7) +
+  geom_signif(comparisons = list(c("Before", "After")), 
+              test = "t.test", 
+              map_signif_level = TRUE, 
+              tip_length = 0.02, 
+              textsize = 3,
+              y_position = max(plot_data$response)*1.1) + 
+  theme_minimal() +
+  theme_bw() +
+  base_theme +
+  scale_fill_manual(values = c("Before" = "#FF7F0E", "After" = "#FF7F0E")) +
+  labs(x = "Period", y = "", title = "") +
+ # annotate("text", x = 2.8, y = max(plot_data$response)*1.2, 
+  #         label = p_label, size = 2.5, hjust = 1) +  # Adds formatted p-value
+  scale_y_continuous(limits = c(min(plot_data$response), max(plot_data$response)*1.2)) +  # Adjusted y-axis limits
+  theme(legend.position = "none", plot.title = element_text(face = "bold"),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank())
+
+m2
+
+m <- ggpubr::ggarrange(m1, m2, widths = c(1.9,1))
+m
+
 
 ################################################################################
 
@@ -476,7 +567,7 @@ n_otters <- combined_data %>% filter(category == "Total independent otters") %>%
 
 #plot sea otters
 
-p3 <- ggplot(combined_data %>% filter(category == "Total independent otters"), aes(x = year, y = response)) +
+o1 <- ggplot(combined_data %>% filter(category == "Total independent otters"), aes(x = year, y = response)) +
   geom_point(alpha = 0.4, color = "#2CA02C", show.legend = FALSE, size=1) +
   stat_smooth(geom = "line", span = 0.6, color = "#2CA02C", show.legend = FALSE, lwd=0.7) +
   stat_smooth(
@@ -501,19 +592,64 @@ p3 <- ggplot(combined_data %>% filter(category == "Total independent otters"), a
   labs(x = "", y = "Number of independents",title = "Sea otters", tag = "A") +
   theme(axis.text.x = element_blank())
 
-#p3
+#o1
+
+# Filter data
+plot_data <- combined_data %>% filter(category == "Total independent otters")
+
+# Perform t-test
+t_test <- t.test(response ~ period, data = plot_data)
+
+# Categorize p-value for display
+p_label <- case_when(
+  t_test$p.value < 0.001 ~ "p < 0.001",
+  t_test$p.value < 0.01  ~ "p < 0.01",
+  t_test$p.value < 0.05  ~ "p < 0.05",
+  TRUE                   ~ "n.s."  # Not significant
+)
 
 
-p <- gridExtra::grid.arrange(p3,p2,p1, ncol=1) 
-p_final <- gridExtra::grid.arrange(p, g0, ncol = 2, widths = c(1,1.35))
+# Boxplot with significance bracket
+o2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
+  geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+  geom_jitter(width = 0.1, alpha = 0.4, color = "black", size = 0.7) +
+  geom_signif(comparisons = list(c("Before", "After")), 
+              test = "t.test", 
+              map_signif_level = TRUE, 
+              tip_length = 0.02, 
+              textsize = 3, 
+              y_position = max(plot_data$response)*1.1) + 
+  theme_minimal() +
+  theme_bw() +
+  base_theme +
+  scale_fill_manual(values = c("Before" = "#2CA02C", "After" = "#2CA02C")) +
+  #annotate("text", x = 2.8, y = max(plot_data$response)*1.2, 
+   #        label = p_label, size = 2.5, hjust = 1) +  # Adds formatted p-value
+  scale_y_continuous(limits = c(min(plot_data$response), max(plot_data$response)*1.2)) +  # Adjusted y-axis limits
+  labs(x = "Period", y = "", title = "") +
+  theme(legend.position = "none", plot.title = element_text(face = "bold"),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank())
 
-p_final
+o2
+
+o <- ggpubr::ggarrange(o1, o2, widths = c(1.9,1))
+o
+
+
+
+#combine plots
+
+f <- gridExtra::grid.arrange(o,m,p, ncol=1) 
+p_final <- gridExtra::grid.arrange(f, g0, ncol = 2, widths = c(1.2,1))
+
+#p_final
 
 
 
 #save
-ggsave(p_final, filename = file.path(figdir, "Fig2_temporal_trends.png"), 
-       width = 7, height = 6, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
+ggsave(p_final, filename = file.path(figdir, "Fig2_temporal_trendsv2.png"), 
+       width = 8.5, height = 5.5, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 
 
