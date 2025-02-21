@@ -91,9 +91,9 @@ forage_build1 <- forage_orig %>%
 #plot
 
 # Theme
-base_theme <-  theme(axis.text=element_text(size=8, color = "black"),
-                     axis.title=element_text(size=8,color = "black"),
-                     plot.tag=element_text(size=7,color = "black"),
+base_theme <-  theme(axis.text=element_text(size=10, color = "black"),
+                     axis.title=element_text(size=12,color = "black"),
+                     plot.tag=element_text(size=9,color = "black"),
                      plot.title=element_text(size=10,color = "black", face = "bold"),
                      # Gridlines
                      panel.grid.major = element_blank(), 
@@ -151,7 +151,8 @@ monterey_label <- data.frame(
 #rocky intertidal sites
 rocky_sites <- pis_build1 %>% dplyr::select(monitoring_site = marine_site_name, latitude, longitude)%>%distinct()
 
-g <- ggplot() +
+
+g <- ggplot() + 
   # Add landmarks
   geom_text(data = monterey_label, mapping = aes(x = x, y = y, label = label),
             size = 3, fontface = "bold") +
@@ -160,23 +161,23 @@ g <- ggplot() +
                     xmin = -122.01, 
                     xmax = -121.96,
                     ymin = 36.625) +
-  #add foraging bouts for mussels
+  # Add foraging bouts for mussels
   geom_sf(
     data = forage_build1, #%>% filter(year == 2017),
     aes(fill = "Mussel forage \nbout"),
     size=0.1,
     shape = 19,
     show.legend = FALSE
-  ) +
+  ) + 
   guides(
     fill = guide_legend(
       override.aes = list(size = 3),  # Adjust the legend point size as needed
       title = NULL  # Remove the legend title
     )
-  )+
-  #add land
-  geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
-  #add rocky intertidal sites
+  ) + 
+  # Add land
+  geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") + 
+  # Add rocky intertidal sites
   geom_point(
     data = rocky_sites,
     aes(x = longitude, y = ifelse(monitoring_site == "Point Lobos",latitude+.001,latitude)),
@@ -184,11 +185,10 @@ g <- ggplot() +
     size = 3,
     fill = "orange",
     show.legend = FALSE
-  )+
-  #add scale bar
+  ) + 
+  # Add scale bar
   ggsn::scalebar(x.min = -121.99, x.max = -121.88, 
                  y.min = 36.519, y.max = 36.645,
-                 #anchor=c(x=-124.7,y=41),
                  location="bottomright",
                  dist = 2, dist_unit = "km",
                  transform=TRUE, 
@@ -197,27 +197,29 @@ g <- ggplot() +
                  st.size=3,
                  border.size=.5,
                  height=.02
-  )+
-  #add north arrow
+  ) + 
+  # Add north arrow
   ggsn::north(x.min = -121.99, x.max = -121.88, 
               y.min = 36.519, y.max = 36.65,
               location = "topright", 
               scale = 0.05, 
-              symbol = 10)+
-  coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.515, 36.645), crs = 4326)+
-  labs(title = "", tag = "D")+
+              symbol = 10) + 
+  coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.515, 36.645), crs = 4326) + 
+  labs(title = "", tag = "D") + 
   theme_bw() + base_theme + theme(
     axis.title = element_blank(),
     legend.position=c(.8,.2),
-    #legend.position = "top",  # Position the legend at the top
-    #legend.justification = "right",  # Align the legend to the right
-    #legend.box = "vertical",  # Box style for the legend
-    #legend.margin = margin(t = -10, r = 10),  # Adjust the top and right margins for positioning
-   # axis.text = element_blank(),
     legend.background = element_rect(fill='transparent'),
-    legend.key = element_rect(fill='transparent')
-  )
-#g
+    legend.key = element_rect(fill='transparent'),
+    #axis.text.x = element_text(angle = 90, vjust = 0.5),  # Rotate x-axis labels and center them
+    axis.text.y = element_text(angle = 90, hjust = 0.5),  # Rotate y-axis labels and center them
+    axis.ticks.x = element_line(),  # Show ticks for x-axis
+    axis.ticks.y = element_line()   # Show ticks for y-axis
+  ) + 
+  # Manually set breaks for every other tick mark on the x-axis
+  scale_x_continuous(breaks = seq(-121.98, -121.88, by = 0.03)) +  # Adjust for your x-axis range
+  scale_y_continuous(breaks = seq(36.515, 36.645, by = 0.03))  # Adjust for your y-axis range
+g
 
 #from https://stackoverflow.com/questions/70977700/creating-completely-customized-legends-in-ggplot2
 dummy_guide <- function(
@@ -422,7 +424,7 @@ p1 <- p +
   ) +
   labs(
     x = "Year",
-    y = "Density (no. per m²)",
+    y = expression(paste("Density ",italic("(n "), "per m²)")),
     title = "Pisaster",
     tag = "C"
   ) +
@@ -431,7 +433,7 @@ p1 <- p +
     legend.title = element_blank()
   )
 
-#p1
+p1
 
 
 
@@ -470,7 +472,7 @@ p2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
   scale_y_continuous(limits = c(min(plot_data$response), max(plot_data$response)*1.2)) +  # Adjusted y-axis limits
   theme(legend.position = "none", plot.title = element_text(face = "bold"))
 
-p2
+#p2
 
 
 
@@ -506,7 +508,7 @@ m1 <- ggplot(combined_data %>% filter(category == "Mussels"), aes(x = year, y = 
   scale_x_continuous(limits = c(2000, 2023)) +
   scale_color_manual(values = "#FF7F0E") + 
   scale_fill_manual(values = "#FF7F0E")+
-  labs(x = "", y = "Percent cover", title = "Mussels", tag = "B") +
+  labs(x = "", y = "Cover (%)", title = "Mussels", tag = "B") +
   theme(axis.text.x = element_blank())
 
 #m1
@@ -589,10 +591,11 @@ o1 <- ggplot(combined_data %>% filter(category == "Total independent otters"), a
   scale_x_continuous(limits = c(2000, 2023)) +
   scale_color_manual(values = "#2CA02C") + 
   scale_fill_manual(values = "#2CA02C")  +    
-  labs(x = "", y = "Number of independents",title = "Sea otters", tag = "A") +
+  labs(x = "", y = expression(paste(italic("n "), "independents")),
+       title = "Sea otters", tag = "A")+
   theme(axis.text.x = element_blank())
 
-#o1
+o1
 
 # Filter data
 plot_data <- combined_data %>% filter(category == "Total independent otters")
@@ -643,12 +646,12 @@ o
 f <- gridExtra::grid.arrange(o,m,p, ncol=1) 
 p_final <- gridExtra::grid.arrange(f, g0, ncol = 2, widths = c(1.15,1))
 
-#p_final
+p_final
 
 
 
 #save
-ggsave(p_final, filename = file.path(figdir, "Fig2_temporal_trendsv2.png"), 
+ggsave(p_final, filename = file.path(figdir, "Fig2_temporal_trendsv3.png"), 
        width = 8.5, height = 5.5, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 
