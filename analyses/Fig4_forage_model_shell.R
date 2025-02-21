@@ -125,7 +125,6 @@ base_theme <-  theme(axis.text=element_text(size=8, color = "black"),
 year_range <- range(df_diet$Year)
 
 
-# Generate the p2 plot
 p <- ggplot(data = df_diet, aes(x = Year, group = Prey_type)) +
   geom_ribbon(aes(ymin = eta_lo, ymax = eta_hi, fill = Prey_type), alpha = 0.25) +
   geom_line(aes(y = eta, color = Prey_type)) +
@@ -201,11 +200,11 @@ df_prey_est$Prey_txt = factor(Prey_txt, levels = unique(Prey_txt))
 # Compute diagnostics
 summary_stats <- summarize_draws(mcmc)
 
-# 2️⃣ R-hat Distribution
+# R-hat Distribution
 rhat_plot <- mcmc_rhat(summary_stats$rhat) +
   ggtitle("R-hat Convergence")
 
-# 3️⃣ Effective Sample Size (ESS)
+# Effective Sample Size (ESS)
 ess_plot <- mcmc_neff(summary_stats$ess_bulk) +
   ggtitle("Effective Sample Size")
 
@@ -250,19 +249,24 @@ base_theme <- theme(axis.text=element_text(size=12,color = "black"),
                      strip.text = element_text(size=10, face = "bold",color = "black", hjust=0),
                      strip.background = element_blank())
 
-plt_trends3 = ggplot(filter(df_prey_est, Year>2007 & Prey != "other"),aes(x=Year,y=Dns)) + # & Prey != "urchin" & Prey != "mussel" 
-  geom_ribbon(aes(ymin=Dns_lo,ymax=Dns_hi),alpha=.25) +
-  geom_line(linewidth=1.1) +
-  # ylab(expression(paste("logit (", lambda,")"))) +
-  geom_vline(xintercept = 2013, linetype="dashed") +
-  ylab("Density") +
-  ggtitle(paste0("")) +
-  scale_color_manual(values = new_palette) +
-  scale_fill_manual(values = new_palette) +
-  facet_wrap(vars(Prey_txt),nrow = 5, scales = "free")+
+plt_trends3 = ggplot(filter(df_prey_est, Year > 2007 & Prey != "other"),
+                     aes(x = Year, y = Dns)) +  
+  geom_ribbon(aes(ymin = Dns_lo, 
+                  ymax = ifelse(Prey_txt == "Mussel" | Prey_txt == "Crab other" | 
+                                  Prey_txt == "Cephalapod" | Prey_txt == "Snail" , pmin(Dns_hi, 2), Dns_hi)),  
+              alpha = .25) +  
+  geom_line(linewidth = 1.1) +  
+  geom_vline(xintercept = 2013, linetype = "dashed") +  
+  ylab("Density") +  
+  ggtitle("") +  
+  scale_color_manual(values = new_palette) +  
+  scale_fill_manual(values = new_palette) +  
+  facet_wrap(vars(Prey_txt), nrow = 5, scales = "free") +  
   theme_classic() + base_theme
 
 print(plt_trends3)
+
+
 
 ggsave(plt_trends3, filename = file.path(figdir, "FigS2_prey_density.png"), 
        width =7, height = 8, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
@@ -379,7 +383,7 @@ ggsave(plt_Erate, filename = file.path(figdir, "Fig5_energetic_intake.png"),
 ii = which(df_Erate_est$Scenario == "Actual")
 tmp = df_Erate_est[ii,c(1,6,7,8)]
 
-# Ensure colors match plt_Erate
+
 plt_U_pred = ggplot(df_Erate_est, aes(x = Year, y = U_prd)) +
   geom_ribbon(aes(ymin = U_prd_lo, ymax = U_prd_hi, fill = Scenario), alpha = 0.3) +  # Match transparency
   geom_line(aes(color = Scenario), size = 0.6) +  # Match line width
