@@ -106,9 +106,9 @@ print(t_test_result)
 #plot heatmap by site
 
 
-tile_theme <-  theme(axis.text=element_text(size=9, color = "black"),
-                     axis.title=element_text(size=9,color = "black"),
-                     plot.tag=element_text(size=9,color = "black"),
+tile_theme <-  theme(axis.text=element_text(size=10, color = "black"),
+                     axis.title=element_text(size=11,color = "black"),
+                     plot.tag=element_text(size=10,color = "black"),
                      plot.title=element_text(size=9,color = "black", face = "bold"),
                      # Gridlines
                      panel.grid.major = element_blank(), 
@@ -147,7 +147,8 @@ p <- ggplot(heatmap_data, aes(x = transect_seq, y = location, fill = Period)) +
   coord_fixed() +
   theme_bw() + tile_theme + 
   theme(legend.position = "top",
-        plot.margin = margin(0, 0, 0, 0, "cm")) 
+        plot.margin = margin(0, 0, 0, 0, "cm"))+
+  scale_x_continuous(breaks = setdiff(scales::breaks_pretty()(range(heatmap_data$transect_seq)), 0))
 
 p
 
@@ -162,8 +163,8 @@ scheme1 <- ggplot(arrow_data, aes(x = x, y = y)) +
                size = 1) +
   labs(x = NULL, y = NULL) +  # Remove axis labels
   theme_void() +  # Remove axis lines and ticks
-  annotate("text", x = 0.5, y = 0.92, label = "High \nintertidal", hjust = 0.5, vjust=5.5, size = 2) +
-  annotate("text", x = 0.5, y = 0.68, label = "Low \nintertidal", hjust = 0.5, vjust=-0.2, size = 2)+
+  annotate("text", x = 0.5, y = 0.92, label = "High", hjust = 0.5, vjust=8, size = 4) +
+  annotate("text", x = 0.5, y = 0.68, label = "Low", hjust = 0.5, vjust=-2, size = 4)+
   theme(plot.margin = margin(0, 1, 0, 0, "cm")) #reduce left margin
 
 
@@ -183,9 +184,9 @@ g1_full
 
 
 # Theme
-my_theme <-  theme(axis.text=element_text(size=9,color = "black"),
-                   axis.title=element_text(size=9,color = "black"),
-                   plot.tag=element_text(size=9,color = "black"),
+my_theme <-  theme(axis.text=element_text(size=10,color = "black"),
+                   axis.title=element_text(size=11,color = "black"),
+                   plot.tag=element_text(size=10,color = "black"),
                    plot.title=element_text(size=9,color = "black", face = "bold"),
                    # Gridlines
                    panel.grid.major = element_blank(), 
@@ -265,7 +266,7 @@ g4 <- ggplot(mus_pos_build1, aes(x = as.numeric(location), fill = ssw_period, co
                aes(x = as.numeric(location), y = 1.08),   
                width = 0.005, alpha = 0.5, outlier.shape = NA,
                position = position_nudge(y = -0.965)) +  
-  labs(x = "Mussel depth \n(distance high to low intertidal)", y = "Frequency", title = "Depth distribution", tag = "B") +
+  labs(x = "Mussel depth \n(distance high to low)", y = "Frequency", title = "Depth distribution", tag = "B") +
   scale_x_continuous(limits = c(0, 30), breaks = seq(0, 30, by = 10)) +
   scale_fill_manual(values=c("indianred","navyblue"))+
   scale_color_manual(values=c("indianred","navyblue"))+
@@ -282,7 +283,7 @@ n <- gridExtra::grid.arrange(g1_full, m, nrow=2, heights = c(0.65,0.25))
 n
 
 
-ggsave(n, filename = file.path(figdir, "Fig3_mussel_expansion2.png"), 
+ggsave(n, filename = file.path(figdir, "Fig3_mussel_expansion3.png"), 
       width = 7, height = 7.5, units = "in", dpi = 600) #last write 26 Sept 2024
 
 
