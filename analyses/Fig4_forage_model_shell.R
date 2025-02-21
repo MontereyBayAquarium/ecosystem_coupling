@@ -48,7 +48,7 @@ fitmodel = here::here("analyses","Foraging_fit.stan")
 stan.data = list(N=N,K=K,eta_obs=eta_obs,tau=tau,mu_obs=mu_obs,sig_mu=sig_mu,
                  N_base=N_base,log_G_pri=log_G_pri)
 #
-parms = c("sig_L","sig_E","Ebar","Ebar_alt","pi","delta","mu",
+parms = c("sig_D","sig_E","Ebar","Ebar_alt","pi","delta","mu",
           "U_prd","M_prd","U_prd_alt","M_prd_alt")
 #
 mod <- cmdstan_model(fitmodel)
@@ -62,7 +62,7 @@ suppressMessages(
     fit <- mod$sample(
       data = stan.data,
       init <- init_fun ,
-      seed = 123,
+      seed = 111,
       chains = ncore,
       parallel_chains = ncore,
       refresh = 100,
@@ -145,17 +145,15 @@ p <- ggplot(data = df_diet, aes(x = Year, group = Prey_type)) +
 
 p
 
-#ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"), 
- #      width =5, height = 3, units = "in", dpi = 600, bg = "white")
+ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"), 
+      width =5, height = 3, units = "in", dpi = 600, bg = "white")
 
 ################################################################################
 #Plot posteriors and diagnostics
 
 color_scheme_set("mix-viridis-orange-purple")
-mcmc_trace(mcmc_array,regex_pars=("sig_L"))
+mcmc_trace(mcmc_array,regex_pars=("sig_D"))
 mcmc_trace(mcmc_array,regex_pars=("sig_E"))
-# mcmc_trace(mcmc_array,pars="alpha")
-# mcmc_trace(mcmc_array,regex_pars="delta")
 #
 color_scheme_set("blue")
 mcmc_areas(mcmc, pars= paste0("Ebar[",seq(1,N),"]"),
@@ -207,8 +205,6 @@ rhat_plot <- mcmc_rhat(summary_stats$rhat) +
 # Effective Sample Size (ESS)
 ess_plot <- mcmc_neff(summary_stats$ess_bulk) +
   ggtitle("Effective Sample Size")
-
-
 
 
 ################################################################################
@@ -379,6 +375,11 @@ ggsave(plt_Erate, filename = file.path(figdir, "Fig5_energetic_intake.png"),
 ################################################################################
 #Plot Figure S3 urchin predation
 
+df_Erate_est$Scenario3 <- factor(df_Erate_est$Scenario, levels = c("Actual", "Scenario 1", "Scenario 2", "Scenario 3"),
+                                 labels = c("Observed urchin consumption ",
+                                            "Scenario 1: no sea urchin increase",
+                                            "Scenario 2: no mussel increase",
+                                            "Scenario 3: no sea urchin or mussel increase"))
 
 ii = which(df_Erate_est$Scenario == "Actual")
 tmp = df_Erate_est[ii,c(1,6,7,8)]
@@ -402,7 +403,7 @@ plt_U_pred = ggplot(df_Erate_est, aes(x = Year, y = U_prd)) +
                                 "Scenario 1" = dark2_colors[2],  
                                 "Scenario 2" = dark2_colors[3],  
                                 "Scenario 3" = dark2_colors[4])) +
-  facet_wrap(~Scenario2, ncol = 1, strip.position = "top") +   # Use facet_wrap() to match plt_Erate
+  facet_wrap(~Scenario3, ncol = 1, strip.position = "top") +   # Use facet_wrap() to match plt_Erate
   scale_x_continuous(breaks = seq(2006, max(df_Erate_est$Year), by = 2),
                      guide = guide_axis(angle = 45)) + 
   theme_classic() + base_theme2 +  
