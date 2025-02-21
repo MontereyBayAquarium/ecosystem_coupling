@@ -11,8 +11,8 @@ data {
   int<lower=0> K ;                 // Number of prey types
   array[N] simplex[K] pi_obs ;     // observation-based estimate of foraging effort allocation, by year
   array[N] real<lower=0> tau ;     // relative precision (dirichlet) of observed foraging effort allocations, by year
-  array[N] vector[K] mu_obs ;      // prey-specific log rates of energy return, from obs. foraging data (SOFA)  
-  real Vadj ;                      // log variance correction for back-converting log normal E rate means 
+  array[N] vector[K] mu_obs ;      // prey-specific log rates of energy return, from obs foraging data (SOFA)  
+  vector[K] V_mu ;                 // variance in log rate of energy return estimates from obs foraging data (SOFA)  
   array[2] int<lower=0> N_base ;   // year range for "base" dynamics
   array[2] vector[K] log_G_pri ;   // prior params for log caloric intake per item (mean and sd)
 }
@@ -26,8 +26,8 @@ transformed data {
 parameters {
   vector[K] log_G ;                // mean log Caloric intake per item of prey consumed for prey type i  
   vector[K] mu ;                   // mean log rate of energy return during dives allocated to foraging on prey type i  
-  vector<lower=0,upper=.2>[K] sig_E;// sd in log rate of energy return 
-  real<lower=0,upper=1> sig_L ;    // year-to-year variation in relative abundance of prey  
+  vector<lower=0>[K] sig_E;        // sd in log rate of energy return 
+  real<lower=0> sig_L ;            // year-to-year variation in relative abundance of prey  
   matrix[N,K] L ;                  // relative abundance of prey types by year (log-instantaneous encounter rates)   
 }
 //
@@ -36,7 +36,7 @@ transformed parameters {
   array[N] vector[K] delta ;       // relative density for each prey type, each year (instantaneous encounter rates)
   array[N] vector[K] lambda ;      // encounter probability (proportional to density) for each prey type, each year
   array[N] vector[K] pi ;          // expected alocation of foraging effort among patches of different prey types
-  vector[K] R = exp(mu + Vadj);    // rate of energy return during dives allocated to foraging on prey type i  
+  vector[K] R = exp(mu + 0.5*V_mu);// rate of energy return during dives allocated to foraging on prey type i  
   array[K-1] vector[K-1] W ;       // switch variable: identifies prey types more profitable than focal prey   
   for(i in 1:(K-1)){
     W[i] = inv_logit(10 * (R[1:(K-1)] - R[i]) ) ;
@@ -67,8 +67,8 @@ model {
   // Priors:
   log_G ~ normal(log_G_pri[1],log_G_pri[2]) ;
   mu ~ normal(2.5,2.5) ;
-  sig_E ~ cauchy(0,.01) ;  
-  sig_L ~ cauchy(0,.05) ;
+  sig_E ~ cauchy(0,.1) ;  
+  sig_L ~ cauchy(0,.1) ;
   // Auto-regressive model (AR[1]) describing log instantaneous prey patch encounter rates over time
   for(i in 1:(K-1)){
     L[1,i] ~ normal(-2.5, 1.5) ;

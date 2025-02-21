@@ -11,88 +11,55 @@ library(RColorBrewer)
 library(dirichlet)
 rstan::rstan_options(javascript=FALSE)
 # Load data ----------------------------------------------
-SOFA_rslts <- mget(load("Rslt_Grp-Period_2024_Sep_04_14hr.rdata", envir=(NE. <- new.env())), envir=NE.)
-rm(NE.)
+# SOFA_rslts <- mget(load("Rslt_Grp-Period_2024_Sep_04_14hr.rdata", envir=(NE. <- new.env())), envir=NE.)
+# rm(NE.)
+df_Prey = read_excel("Preytypes.xlsx")
+df_SOFA_rslts = read_excel("SOFA_posterior_sums.xlsx")
 
 # Process data -------------------------------------------
 N_base = c(3,6) 
-sumstats = SOFA_rslts$sumstats; mcmc = SOFA_rslts$mcmc; vn0 = SOFA_rslts$vn; 
-Years = as.integer(SOFA_rslts$Groupname)
+Years = seq(min(df_SOFA_rslts$Year,na.rm = T),max(df_SOFA_rslts$Year,na.rm = T))
 N = length(Years)
 Y0 = min(Years)-1
-K = SOFA_rslts$Nptps
-
-df_Prey = read_excel("Preytypes.xlsx")
-gamma = array(0, dim=c(2,K))
-gamma[1,1:K] = df_Prey$gamma1
-gamma[2,1:K] = df_Prey$gamma2
-log_C_pri = array(0, dim=c(2,K))
-log_C_pri[1,1:K] = df_Prey$Caldens_mn
-log_C_pri[2,1:K] = df_Prey$Caldens_sd
-#
-# Calculate energy gain per prey item
-ii = which(startsWith(vn0,"SZ["))
-log_G = matrix(0, nrow = nrow(mcmc),ncol = K)
-for(i in 1:K){
-  tmp = log(mcmc[,ii[i]] )
-  tmp2 = exp(gamma[1,i] + gamma[2,i] * tmp )
-  C = exp(rnorm(length(tmp), log_C_pri[1,i], log_C_pri[2,i]))
-  log_G[,i] = log(tmp2 * C) ;
-}
+K = nrow(df_Prey)
+PreyTypes = df_Prey$PreyType
 log_G_pri = array(0, dim=c(2,K))
-log_G_pri[1,1:K] = apply(log_G,2,"mean")
-log_G_pri[2,1:K] = apply(log_G,2,"sd")
-
-pi_obs = matrix(0,nrow = N, ncol = K)
-tau = numeric(length = N)
-E_obs = matrix(0,nrow = N, ncol = K)
-sd_E = matrix(0,nrow = N, ncol = K)
-tmp = matrix(0,nrow = dim(mcmc)[1], ncol = K)
-for(t in 1:N){
-  ii = which(startsWith(vn0,paste0("etaG[",t,",")))
-  pi_obs[t,1:K] = sumstats$mean[ii]
-  pi_obs[t,] = pi_obs[t,] / sum(pi_obs[t,])
-  for(i in 1:K){
-    tmp[,i] = mcmc[,ii[i]]
-  }
-  ft = fit.dirichlet(tmp)
-  tau[t] = ft$weighted.k 
-  ii = which(startsWith(vn0,paste0("ERg[",t,",")))
-  E_obs[t,1:K] = sumstats$mean[ii]
-  sd_E[t,1:K] = sumstats$sd[ii]
-}
-M = E_obs ; V = sd_E^2
-mu_E = log(M^2/sqrt(M^2+V))
-sig_E = sqrt(log(1+ V/M^2))
-Vadj = 0.5*mean(sig_E[,-11]^2)
-
-rm(mcmc,sumstats,vn0)
+log_G_pri[1,1:K] = df_Prey$log_G_mn
+log_G_pri[2,1:K] = df_Prey$log_G_sd
+mu_obs = matrix(df_SOFA_rslts$Value[df_SOFA_rslts$Param=="mu_est"],nrow = N, ncol=K, byrow = F)
+V_mu = df_SOFA_rslts$Value[df_SOFA_rslts$Param=="V_mu"]
+pi_obs = matrix(df_SOFA_rslts$Value[df_SOFA_rslts$Param=="pi"],nrow = N, ncol=K, byrow = F)
+tau =  df_SOFA_rslts$Value[df_SOFA_rslts$Param=="tau"]
+E_obs = exp( colMeans(mu_obs) +V_mu/2)
+sd_E = sqrt( (exp(V_mu) - 1)*exp(2*colMeans(mu_obs) + V_mu) )
 #
 # Set up Stan fitting --------------------------------------
-nsamples = 2500
-nburnin = 300
+nsamples = 3000
+nburnin = 2000
 cores = detectCores()
 ncore = max(3,min(5,cores-2))
 Niter = round(nsamples/ncore)
 fitmodel = "Foraging_fit.stan"
 #
-stan.data = list(N=N,K=K,pi_obs=pi_obs,tau=tau,mu_obs=mu_E,Vadj=Vadj,
+stan.data = list(N=N,K=K,pi_obs=pi_obs,tau=tau,mu_obs=mu_obs,V_mu=V_mu,
                  N_base=N_base,log_G_pri=log_G_pri)
-                 # urcP_obs=urcP_obs,urcR_obs=urcR_obs,mus_obs=mus_obs,
-                 # DP_flag=DP_flag,DR_flag=DR_flag,DM_flag=DM_flag,
 #
 parms = c("sig_L","sig_E","Ebar","Ebar_alt","pi","delta",
           "U_prd","M_prd","U_prd_alt","M_prd_alt")
-
 #
 mod <- cmdstan_model(fitmodel)
+
+init_fun <- function() {list(sig_E=runif(K, .04, .06), 
+                             sig_L=runif(1, .2, .25), 
+                             mu = runif(K, .9*colMeans(mu_obs), 1.1*colMeans(mu_obs)) ) }
+
 #
 suppressMessages(
   suppressWarnings ( 
     fit <- mod$sample(
       data = stan.data,
-      init <- init_fun <- function() {list(sig_E=runif(K, .01, .05) ) },
-      seed = 123,
+      init <- init_fun ,
+      seed = 111,
       chains = ncore,
       parallel_chains = ncore,
       refresh = 100,
@@ -101,9 +68,6 @@ suppressMessages(
       iter_sampling = Niter )
   )
 )
-# tmp = fit$output(); tmp[[1]][40:80]
-# generate summary stats (sumstats, mcmc matrix)
-# select_chains = seq(1,ncore); select_chains = select_chains[-c(1:2)]
 source("cmdstan_sumstats.r")
 #
 # Examine results -----------------------------------------------

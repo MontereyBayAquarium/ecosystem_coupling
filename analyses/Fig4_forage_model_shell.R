@@ -1,6 +1,4 @@
 
-
-
 rm(list=ls())
 
 ################################################################################
@@ -16,95 +14,54 @@ rstan::rstan_options(javascript=FALSE)
 #Set directories and load data
 datin <- here::here("output","processed")
 figdir <- here::here("figures")
-
-# Define the Google Drive file ID for sofa output
-# This file exceeds 100MB GitHub limit so is stored externally
-file_id <- "1yC8yrS69uOqbvlzQJakL0z-DC-yMhNel"
-
-temp_file <- tempfile(fileext = ".rdata")
-drive_download(as_id(file_id), path = temp_file, overwrite = TRUE)
-SOFA_rslts <- mget(load(temp_file))
+# Load spreadsheets with summary statistics from SOFA model fit
+df_Prey = read_excel(file.path(datin,"/sofa/Preytypes.xlsx"))
+df_SOFA_rslts = read_excel(file.path(datin,"/sofa/SOFA_posterior_sums.xlsx"))
 
 ################################################################################
 # Process data 
 N_base = c(3,6) 
-sumstats = SOFA_rslts$sumstats; mcmc = SOFA_rslts$mcmc; vn0 = SOFA_rslts$vn; 
-Years = as.integer(SOFA_rslts$Groupname)
+Years = seq(min(df_SOFA_rslts$Year,na.rm = T),max(df_SOFA_rslts$Year,na.rm = T))
 N = length(Years)
 Y0 = min(Years)-1
-K = SOFA_rslts$Nptps
-
-df_Prey = read_excel(file.path(datin,"/sofa/Preytypes.xlsx"))
-gamma = array(0, dim=c(2,K))
-gamma[1,1:K] = df_Prey$gamma1
-gamma[2,1:K] = df_Prey$gamma2
-log_C_pri = array(0, dim=c(2,K))
-log_C_pri[1,1:K] = df_Prey$Caldens_mn
-log_C_pri[2,1:K] = df_Prey$Caldens_sd
-#
-# Calculate energy gain per prey item
-ii = which(startsWith(vn0,"SZ["))
-log_G = matrix(0, nrow = nrow(mcmc),ncol = K)
-for(i in 1:K){
-  tmp = log(mcmc[,ii[i]] )
-  tmp2 = exp(gamma[1,i] + gamma[2,i] * tmp )
-  C = exp(rnorm(length(tmp), log_C_pri[1,i], log_C_pri[2,i]))
-  log_G[,i] = log(tmp2 * C) ;
-}
+K = nrow(df_Prey)
+PreyTypes = df_Prey$PreyType
 log_G_pri = array(0, dim=c(2,K))
-log_G_pri[1,1:K] = apply(log_G,2,"mean")
-log_G_pri[2,1:K] = apply(log_G,2,"sd")
-
-pi_obs = matrix(0,nrow = N, ncol = K)
-tau = numeric(length = N)
-E_obs = matrix(0,nrow = N, ncol = K)
-sd_E = matrix(0,nrow = N, ncol = K)
-tmp = matrix(0,nrow = dim(mcmc)[1], ncol = K)
-for(t in 1:N){
-  ii = which(startsWith(vn0,paste0("etaG[",t,",")))
-  pi_obs[t,1:K] = sumstats$mean[ii]
-  pi_obs[t,] = pi_obs[t,] / sum(pi_obs[t,])
-  for(i in 1:K){
-    tmp[,i] = mcmc[,ii[i]]
-  }
-  ft = fit.dirichlet(tmp)
-  tau[t] = ft$weighted.k 
-  ii = which(startsWith(vn0,paste0("ERg[",t,",")))
-  E_obs[t,1:K] = sumstats$mean[ii]
-  sd_E[t,1:K] = sumstats$sd[ii]
-}
-M = E_obs ; V = sd_E^2
-mu_E = log(M^2/sqrt(M^2+V))
-sig_E = sqrt(log(1+ V/M^2))
-Vadj = 0.5*mean(sig_E[,-11]^2)
-
-rm(mcmc,sumstats,vn0)
+log_G_pri[1,1:K] = df_Prey$log_G_mn
+log_G_pri[2,1:K] = df_Prey$log_G_sd
+mu_obs = matrix(df_SOFA_rslts$Value[df_SOFA_rslts$Param=="mu_est"],nrow = N, ncol=K, byrow = F)
+V_mu = df_SOFA_rslts$Value[df_SOFA_rslts$Param=="V_mu"]
+pi_obs = matrix(df_SOFA_rslts$Value[df_SOFA_rslts$Param=="pi"],nrow = N, ncol=K, byrow = F)
+tau =  df_SOFA_rslts$Value[df_SOFA_rslts$Param=="tau"]
+E_obs = exp( colMeans(mu_obs) +V_mu/2)
+sd_E = sqrt( (exp(V_mu) - 1)*exp(2*colMeans(mu_obs) + V_mu) )
 #
 # Set up Stan fitting --------------------------------------
-nsamples = 2500
-nburnin = 300
+nsamples = 3000
+nburnin = 2000
 cores = detectCores()
 ncore = max(3,min(5,cores-2))
 Niter = round(nsamples/ncore)
 fitmodel = here::here("analyses","Foraging_fit.stan")
 #
-stan.data = list(N=N,K=K,pi_obs=pi_obs,tau=tau,mu_obs=mu_E,Vadj=Vadj,
+stan.data = list(N=N,K=K,pi_obs=pi_obs,tau=tau,mu_obs=mu_obs,V_mu=V_mu,
                  N_base=N_base,log_G_pri=log_G_pri)
-# urcP_obs=urcP_obs,urcR_obs=urcR_obs,mus_obs=mus_obs,
-# DP_flag=DP_flag,DR_flag=DR_flag,DM_flag=DM_flag,
 #
 parms = c("sig_L","sig_E","Ebar","Ebar_alt","pi","delta",
           "U_prd","M_prd","U_prd_alt","M_prd_alt")
-
 #
 mod <- cmdstan_model(fitmodel)
+
+init_fun <- function() {list(sig_E=runif(K, .04, .06), 
+                             sig_L=runif(1, .2, .25), 
+                             mu = runif(K, .9*colMeans(mu_obs), 1.1*colMeans(mu_obs)) ) }
 #
 suppressMessages(
   suppressWarnings ( 
     fit <- mod$sample(
       data = stan.data,
-      init <- init_fun <- function() {list(sig_E=runif(K, .01, .05) ) },
-      seed = 123,
+      init <- init_fun ,
+      seed = 111,
       chains = ncore,
       parallel_chains = ncore,
       refresh = 100,
@@ -113,12 +70,8 @@ suppressMessages(
       iter_sampling = Niter )
   )
 )
-# tmp = fit$output(); tmp[[1]][40:80]
-# generate summary stats (sumstats, mcmc matrix)
-# select_chains = seq(1,ncore); select_chains = select_chains[-c(1:2)]
 source(here::here("analyses","cmdstan_sumstats.r"))
 #
-
 
 ################################################################################
 #Plot Figure 4 - proportion foraging effort
@@ -180,7 +133,7 @@ p <- ggplot(data = df_diet, aes(x = Year, group = Prey_type)) +
   theme_classic() +
   scale_x_continuous(limits = year_range, breaks = seq(min(year_range), max(year_range), by = 2),  
                      guide = guide_axis(angle = 45)) +
-  geom_vline(xintercept = 2013, linetype = "dotted", size = 0.6) +
+  geom_vline(xintercept = 2013, linetype = "dotted", linewidth = 0.6) +
   annotate(geom = "text", label = "SSW", x = 2010.5, y = 0.39, size = 2.5) +
   annotate("segment", x = 2010.8, y = 0.375, xend = 2012.7, yend = 0.32,
            arrow = arrow(type = "closed", length = unit(0.02, "npc"))) +
@@ -217,7 +170,7 @@ df_prey_est = data.frame(Prey=character(),
                          Dns_lo=numeric(),
                          Dns_hi=numeric() )
 
-df_prey_est$Prey = factor(df_prey_est$Prey, levels = Preynames)
+
 #
 for(i in 1:(K-1)){
   ii = which(startsWith(vn,"delta[") & endsWith(vn,paste0(",",i,"]")))
@@ -237,8 +190,12 @@ for(i in 1:(K-1)){
 }
 gridExtra::grid.arrange(grobs = plt_trends)
 
+df_prey_est$Prey = factor(df_prey_est$Prey, levels = PreyTypes)
 
-
+# Add pretty text version of prey types, convert to factor to maintain same order in plots
+Prey_txt = stringr::str_replace_all(df_prey_est$Prey, "_", " ") 
+Prey_txt = stringr::str_to_sentence(Prey_txt)
+df_prey_est$Prey_txt = factor(Prey_txt, levels = unique(Prey_txt))
 
 # Compute diagnostics
 summary_stats <- summarize_draws(mcmc)
@@ -255,7 +212,7 @@ ess_plot <- mcmc_neff(summary_stats$ess_bulk) +
 
 
 ################################################################################
-#Plot alt prey
+#FigS2 Estimated trends in prey encounter rates
 
 plt_trends2 = ggplot(filter(df_prey_est,Year>2007 & (Prey == "urchin" | Prey == "mussel")),aes(x=Year,y=Dns)) +
   geom_ribbon(aes(ymin=Dns_lo,ymax=Dns_hi,fill=Prey),alpha=.3) +
@@ -263,15 +220,14 @@ plt_trends2 = ggplot(filter(df_prey_est,Year>2007 & (Prey == "urchin" | Prey == 
   geom_vline(xintercept = 2013, linetype="dashed") +
   # ylab(expression(paste("logit (", lambda,")"))) +
   ylab("Density") +
-  ggtitle(paste0("Trends in prey density, urchins and mussels")) +
+  ggtitle(paste0("Trends in prey encounter rates, urchins and mussels")) +
   theme_classic() + 
   scale_fill_brewer(palette = "Accent") +
   scale_color_brewer(palette = "Accent") +
   facet_wrap(vars(Prey),nrow = 2)
 print(plt_trends2)
 
-
-
+new_palette <- brewer.pal(name="Paired",n=10)[c(4,10,1,6,8,3,5,7,2,9)]
 base_theme <- theme(axis.text=element_text(size=12,color = "black"),
                      axis.title=element_text(size=13,color = "black"),
                      plot.tag=element_text(size=11,color = "black"),
@@ -293,10 +249,7 @@ base_theme <- theme(axis.text=element_text(size=12,color = "black"),
                      strip.text = element_text(size=10, face = "bold",color = "black", hjust=0),
                      strip.background = element_blank())
 
-plt_trends3 = ggplot(filter(df_prey_est %>%
-                              mutate(Prey = str_replace_all(Prey, "_", " ") %>%  
-                                       str_to_sentence()) 
-                            ,Year>2007 & Prey != "other"),aes(x=Year,y=Dns)) + # & Prey != "urchin" & Prey != "mussel" 
+plt_trends3 = ggplot(filter(df_prey_est, Year>2007 & Prey != "other"),aes(x=Year,y=Dns)) + # & Prey != "urchin" & Prey != "mussel" 
   geom_ribbon(aes(ymin=Dns_lo,ymax=Dns_hi),alpha=.25) +
   geom_line(linewidth=1.1) +
   # ylab(expression(paste("logit (", lambda,")"))) +
@@ -305,7 +258,7 @@ plt_trends3 = ggplot(filter(df_prey_est %>%
   ggtitle(paste0("")) +
   scale_color_manual(values = new_palette) +
   scale_fill_manual(values = new_palette) +
-  facet_wrap(vars(Prey),nrow = 5, scales = "free")+
+  facet_wrap(vars(Prey_txt),nrow = 5, scales = "free")+
   theme_classic() + base_theme
 
 print(plt_trends3)
@@ -468,23 +421,20 @@ post_index <- which(Years >= 2013)
 cat("Pre-2013 Years: ", Years[pre_index], "\n")
 cat("Post-2013 Years: ", Years[post_index], "\n")
 
-cat("Pre-2013 Effort Means: ", pre_effort_mean, "\n")
-cat("Pre-2013 Effort SDs: ", pre_effort_sd, "\n")
-cat("Post-2013 Effort Means: ", post_effort_mean, "\n")
-cat("Post-2013 Effort SDs: ", post_effort_sd, "\n")
-
 #Get proportion effort
 pre_effort_mean <- colMeans(pi_obs[pre_index, ]) * 100
 pre_effort_sd <- apply(pi_obs[pre_index, ], 2, sd) * 100
 post_effort_mean <- colMeans(pi_obs[post_index, ]) * 100
 post_effort_sd <- apply(pi_obs[post_index, ], 2, sd) * 100
 
+cat("Pre-2013 Effort Means: ", pre_effort_mean, "\n")
+cat("Pre-2013 Effort SDs: ", pre_effort_sd, "\n")
+cat("Post-2013 Effort Means: ", post_effort_mean, "\n")
+cat("Post-2013 Effort SDs: ", post_effort_sd, "\n")
 
 #Get proportion effort
-E_mean <- colMeans(E_obs)
-E_sd <- colMeans(sd_E)
-
-
+E_mean <- E_obs
+E_sd <- sd_E
 
 df_prey_table <- data.frame(
   PreyType = PreyTypes,
