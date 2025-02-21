@@ -30,10 +30,11 @@ log_G_pri = array(0, dim=c(2,K))
 log_G_pri[1,1:K] = df_Prey$log_G_mn
 log_G_pri[2,1:K] = df_Prey$log_G_sd
 mu_obs = matrix(df_SOFA_rslts$Value[df_SOFA_rslts$Param=="mu_est"],nrow = N, ncol=K, byrow = F)
-V_mu = df_SOFA_rslts$Value[df_SOFA_rslts$Param=="V_mu"]
-pi_obs = matrix(df_SOFA_rslts$Value[df_SOFA_rslts$Param=="pi"],nrow = N, ncol=K, byrow = F)
+sig_mu = df_SOFA_rslts$Value[df_SOFA_rslts$Param=="sig_mu"]
+V_mu = sig_mu^2
+eta_obs = matrix(df_SOFA_rslts$Value[df_SOFA_rslts$Param=="eta"],nrow = N, ncol=K, byrow = F)
 tau =  df_SOFA_rslts$Value[df_SOFA_rslts$Param=="tau"]
-E_obs = exp( colMeans(mu_obs) +V_mu/2)
+E_obs = exp( colMeans(mu_obs) + V_mu/2)
 sd_E = sqrt( (exp(V_mu) - 1)*exp(2*colMeans(mu_obs) + V_mu) )
 #
 # Set up Stan fitting --------------------------------------
@@ -44,16 +45,16 @@ ncore = max(3,min(5,cores-2))
 Niter = round(nsamples/ncore)
 fitmodel = here::here("analyses","Foraging_fit.stan")
 #
-stan.data = list(N=N,K=K,pi_obs=pi_obs,tau=tau,mu_obs=mu_obs,V_mu=V_mu,
+stan.data = list(N=N,K=K,eta_obs=eta_obs,tau=tau,mu_obs=mu_obs,sig_mu=sig_mu,
                  N_base=N_base,log_G_pri=log_G_pri)
 #
-parms = c("sig_L","sig_E","Ebar","Ebar_alt","pi","delta",
+parms = c("sig_L","sig_E","Ebar","Ebar_alt","pi","delta","mu",
           "U_prd","M_prd","U_prd_alt","M_prd_alt")
 #
 mod <- cmdstan_model(fitmodel)
 
 init_fun <- function() {list(sig_E=runif(K, .04, .06), 
-                             sig_L=runif(1, .2, .25), 
+                             sig_L=runif(3, .2, .25), 
                              mu = runif(K, .9*colMeans(mu_obs), 1.1*colMeans(mu_obs)) ) }
 #
 suppressMessages(
@@ -61,7 +62,7 @@ suppressMessages(
     fit <- mod$sample(
       data = stan.data,
       init <- init_fun ,
-      seed = 111,
+      seed = 123,
       chains = ncore,
       parallel_chains = ncore,
       refresh = 100,
@@ -422,10 +423,10 @@ cat("Pre-2013 Years: ", Years[pre_index], "\n")
 cat("Post-2013 Years: ", Years[post_index], "\n")
 
 #Get proportion effort
-pre_effort_mean <- colMeans(pi_obs[pre_index, ]) * 100
-pre_effort_sd <- apply(pi_obs[pre_index, ], 2, sd) * 100
-post_effort_mean <- colMeans(pi_obs[post_index, ]) * 100
-post_effort_sd <- apply(pi_obs[post_index, ], 2, sd) * 100
+pre_effort_mean <- colMeans(eta_obs[pre_index, ]) * 100
+pre_effort_sd <- apply(eta_obs[pre_index, ], 2, sd) * 100
+post_effort_mean <- colMeans(eta_obs[post_index, ]) * 100
+post_effort_sd <- apply(eta_obs[post_index, ], 2, sd) * 100
 
 cat("Pre-2013 Effort Means: ", pre_effort_mean, "\n")
 cat("Pre-2013 Effort SDs: ", pre_effort_sd, "\n")
