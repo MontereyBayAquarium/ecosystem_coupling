@@ -469,7 +469,7 @@ p2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
   labs(x = "Period", y = "", title = "") +
   #annotate("text", x = 2.8, y = max(plot_data$response)*1.2, 
    #        label = p_label, size = 2.5, hjust = 1) +  # Adds formatted p-value
-  scale_y_continuous(limits = c(min(plot_data$response), max(plot_data$response)*1.2)) +  # Adjusted y-axis limits
+  scale_y_continuous(limits = c(min(plot_data$response), max(plot_data$response)*1.25)) +  # Adjusted y-axis limits
   theme(legend.position = "none", plot.title = element_text(face = "bold"))
 
 #p2
