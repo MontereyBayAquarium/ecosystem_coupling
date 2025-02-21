@@ -124,7 +124,6 @@ base_theme <-  theme(axis.text=element_text(size=8, color = "black"),
 year_range <- range(df_diet$Year)
 
 
-# Generate the p2 plot
 p <- ggplot(data = df_diet, aes(x = Year, group = Prey_type)) +
   geom_ribbon(aes(ymin = eta_lo, ymax = eta_hi, fill = Prey_type), alpha = 0.25) +
   geom_line(aes(y = eta, color = Prey_type)) +
@@ -200,11 +199,11 @@ df_prey_est$Prey_txt = factor(Prey_txt, levels = unique(Prey_txt))
 # Compute diagnostics
 summary_stats <- summarize_draws(mcmc)
 
-# 2️⃣ R-hat Distribution
+# R-hat Distribution
 rhat_plot <- mcmc_rhat(summary_stats$rhat) +
   ggtitle("R-hat Convergence")
 
-# 3️⃣ Effective Sample Size (ESS)
+# Effective Sample Size (ESS)
 ess_plot <- mcmc_neff(summary_stats$ess_bulk) +
   ggtitle("Effective Sample Size")
 
