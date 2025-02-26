@@ -39,7 +39,7 @@ sd_E = sqrt( (exp(V_mu) - 1)*exp(2*colMeans(mu_obs) + V_mu) )
 #
 # Set up Stan fitting --------------------------------------
 nsamples = 3000
-nburnin = 2000
+nburnin = 3000
 cores = detectCores()
 ncore = max(3,min(5,cores-2))
 Niter = round(nsamples/ncore)
@@ -160,6 +160,21 @@ mcmc_areas(mcmc, pars= paste0("Ebar[",seq(1,N),"]"),
            area_method="equal height",
            prob = 0.8) + scale_y_discrete(labels=as.character(Years)) + labs(x="Energy gain")
 
+
+# Compute diagnostics
+summary_stats <- summarize_draws(mcmc)
+
+# R-hat Distribution
+rhat_plot <- mcmc_rhat(summary_stats$rhat) +
+  ggtitle("R-hat Convergence")
+
+# Effective Sample Size (ESS)
+ess_plot <- mcmc_neff(summary_stats$ess_bulk) +
+  ggtitle("Effective Sample Size")
+
+################################################################################
+#FigS2 Estimated trends in prey encounter rates
+
 Preynames = df_Prey$PreyType[1:K]
 plt_trends = list()
 df_prey_est = data.frame(Prey=character(),
@@ -167,7 +182,6 @@ df_prey_est = data.frame(Prey=character(),
                          Dns=numeric(),
                          Dns_lo=numeric(),
                          Dns_hi=numeric() )
-
 
 #
 for(i in 1:(K-1)){
@@ -194,21 +208,6 @@ df_prey_est$Prey = factor(df_prey_est$Prey, levels = PreyTypes)
 Prey_txt = stringr::str_replace_all(df_prey_est$Prey, "_", " ") 
 Prey_txt = stringr::str_to_sentence(Prey_txt)
 df_prey_est$Prey_txt = factor(Prey_txt, levels = unique(Prey_txt))
-
-# Compute diagnostics
-summary_stats <- summarize_draws(mcmc)
-
-# R-hat Distribution
-rhat_plot <- mcmc_rhat(summary_stats$rhat) +
-  ggtitle("R-hat Convergence")
-
-# Effective Sample Size (ESS)
-ess_plot <- mcmc_neff(summary_stats$ess_bulk) +
-  ggtitle("Effective Sample Size")
-
-
-################################################################################
-#FigS2 Estimated trends in prey encounter rates
 
 plt_trends2 = ggplot(filter(df_prey_est,Year>2007 & (Prey == "urchin" | Prey == "mussel")),aes(x=Year,y=Dns)) +
   geom_ribbon(aes(ymin=Dns_lo,ymax=Dns_hi,fill=Prey),alpha=.3) +
@@ -261,8 +260,6 @@ plt_trends3 = ggplot(filter(df_prey_est, Year > 2007 & Prey != "other"),
   theme_classic() + base_theme
 
 print(plt_trends3)
-
-
 
 ggsave(plt_trends3, filename = file.path(figdir, "FigS2_prey_density.png"), 
        width =7, height = 8, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
@@ -427,20 +424,24 @@ post_index <- which(Years >= 2013)
 cat("Pre-2013 Years: ", Years[pre_index], "\n")
 cat("Post-2013 Years: ", Years[post_index], "\n")
 
+pi_est = matrix(sumstats$mean[startsWith(vn,"pi[")],nrow = N, ncol=K, byrow = F)
+
 #Get proportion effort
-pre_effort_mean <- colMeans(eta_obs[pre_index, ]) * 100
-pre_effort_sd <- apply(eta_obs[pre_index, ], 2, sd) * 100
-post_effort_mean <- colMeans(eta_obs[post_index, ]) * 100
-post_effort_sd <- apply(eta_obs[post_index, ], 2, sd) * 100
+pre_effort_mean <- colMeans(pi_est[pre_index, ]) * 100
+pre_effort_sd <- apply(pi_est[pre_index, ], 2, sd) * 100
+post_effort_mean <- colMeans(pi_est[post_index, ]) * 100
+post_effort_sd <- apply(pi_est[post_index, ], 2, sd) * 100
 
 cat("Pre-2013 Effort Means: ", pre_effort_mean, "\n")
 cat("Pre-2013 Effort SDs: ", pre_effort_sd, "\n")
 cat("Post-2013 Effort Means: ", post_effort_mean, "\n")
 cat("Post-2013 Effort SDs: ", post_effort_sd, "\n")
 
-#Get proportion effort
-E_mean <- E_obs
-E_sd <- sd_E
+#Get estimated energy rates by prey
+mu_est = sumstats$mean[startsWith(vn,"mu[")]
+V_mu = (sumstats$mean[startsWith(vn,"sig_E[")] )^2
+E_mean = exp( mu_est + V_mu/2)
+E_sd = sqrt( (exp(V_mu) - 1)*exp(2*mu_est + V_mu) )
 
 df_prey_table <- data.frame(
   PreyType = PreyTypes,
