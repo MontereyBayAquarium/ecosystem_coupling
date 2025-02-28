@@ -145,8 +145,8 @@ p <- ggplot(data = df_diet, aes(x = Year, group = Prey_type)) +
 
 p
 
-ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"), 
-      width =5, height = 3, units = "in", dpi = 600, bg = "white")
+#ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"), 
+ #     width =5, height = 3, units = "in", dpi = 600, bg = "white")
 
 ################################################################################
 #Plot posteriors and diagnostics
@@ -261,8 +261,8 @@ plt_trends3 = ggplot(filter(df_prey_est, Year > 2007 & Prey != "other"),
 
 print(plt_trends3)
 
-ggsave(plt_trends3, filename = file.path(figdir, "FigS2_prey_density.png"), 
-       width =7, height = 8, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
+#ggsave(plt_trends3, filename = file.path(figdir, "FigS2_prey_density.png"), 
+ #      width =7, height = 8, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
 
 
 ################################################################################
@@ -365,8 +365,8 @@ plt_Erate = ggplot(df_Erate_est, aes(x = Year, y = Erate)) +
 print(plt_Erate)
 
 
-ggsave(plt_Erate, filename = file.path(figdir, "Fig5_energetic_intake.png"), 
-      width =4, height = 7, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
+#ggsave(plt_Erate, filename = file.path(figdir, "Fig5_energetic_intake.png"), 
+ #     width =4, height = 7, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
 
 
 ################################################################################
@@ -409,8 +409,8 @@ plt_U_pred = ggplot(df_Erate_est, aes(x = Year, y = U_prd)) +
 print(plt_U_pred)
 
 
-ggsave(plt_U_pred, filename = file.path(figdir, "FigS3_urchin_consumption.png"), 
-       width =4, height = 7, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
+#ggsave(plt_U_pred, filename = file.path(figdir, "FigS3_urchin_consumption.png"), 
+ #      width =4, height = 7, units = "in", dpi = 600, bg = "white") #last write Feb 19, 2025
 
 
 ################################################################################
@@ -453,7 +453,7 @@ df_prey_table <- data.frame(
   Post2013_Effort_SD = post_effort_sd
 )
 
-write.csv(df_prey_table, file.path(here::here("tables","prey_table.csv"))) #last write 19 Feb 2025
+#write.csv(df_prey_table, file.path(here::here("tables","prey_table.csv"))) #last write 19 Feb 2025
 
 
 
