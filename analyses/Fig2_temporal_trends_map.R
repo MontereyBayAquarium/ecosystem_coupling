@@ -205,7 +205,7 @@ g <- ggplot() +
               scale = 0.05, 
               symbol = 10) + 
   coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.515, 36.645), crs = 4326) + 
-  labs(title = "", tag = "D") + 
+  labs(title = "", tag = "G") + 
   theme_bw() + base_theme + theme(
     axis.title = element_blank(),
     legend.position=c(.8,.2),
@@ -218,7 +218,10 @@ g <- ggplot() +
   ) + 
   # Manually set breaks for every other tick mark on the x-axis
   scale_x_continuous(breaks = seq(-121.98, -121.88, by = 0.03)) +  # Adjust for your x-axis range
-  scale_y_continuous(breaks = seq(36.515, 36.645, by = 0.03))  # Adjust for your y-axis range
+  scale_y_continuous(breaks = seq(36.515, 36.645, by = 0.03))+  # Adjust for your y-axis range
+  theme(      
+    #toy with plot margin to align with other panels
+    plot.margin = unit(c(5.5, 5.5, 7, 5.5), "pt"))
 g
 
 #from https://stackoverflow.com/questions/70977700/creating-completely-customized-legends-in-ggplot2
@@ -426,12 +429,15 @@ p1 <- p +
     x = "Year",
     y = expression(paste("Density ",italic("(n "), "per m²)")),
     title = "Pisaster",
-    tag = "C"
+    tag = "E"
   ) +
   theme(
     plot.title = element_text(face = "bold.italic"),
-    legend.title = element_blank()
+    legend.title = element_blank(),
+    #toy with plot margin to align with other panels
+    plot.margin = unit(c(5.5, 5.5, 5.5, 8), "pt")
   )
+
 
 p1
 
@@ -466,7 +472,8 @@ p2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
   theme_bw() +
   base_theme +
   scale_fill_manual(values = c("Before" = "#E377C2", "After" = "#E377C2")) +
-  labs(x = "Period", y = "", title = "") +
+  labs(x = "Period", y = "", title = "",
+       tage = "F") +
   #annotate("text", x = 2.8, y = max(plot_data$response)*1.2, 
    #        label = p_label, size = 2.5, hjust = 1) +  # Adds formatted p-value
   scale_y_continuous(limits = c(min(plot_data$response), max(plot_data$response)*1.25)) +  # Adjusted y-axis limits
@@ -476,7 +483,7 @@ p2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
 
 
 
-p <- ggpubr::ggarrange(p1, p2, widths = c(1.9,1))
+p <- ggpubr::ggarrange(p1, p2, widths = c(1.9,1), align = "hv")
 p
 
 
@@ -508,8 +515,10 @@ m1 <- ggplot(combined_data %>% filter(category == "Mussels"), aes(x = year, y = 
   scale_x_continuous(limits = c(2000, 2023)) +
   scale_color_manual(values = "#FF7F0E") + 
   scale_fill_manual(values = "#FF7F0E")+
-  labs(x = "", y = "Cover (%)", title = "Mussels", tag = "B") +
-  theme(axis.text.x = element_blank())
+  labs(x = "", y = "Cover (%)", title = "Mussels", tag = "C") +
+  theme(axis.text.x = element_blank(),
+        #toy with plot margin to align with other panels
+        plot.margin = unit(c(5.5, 5.5, 5.5, 12), "pt"))
 
 #m1
 
@@ -543,7 +552,7 @@ m2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
   theme_bw() +
   base_theme +
   scale_fill_manual(values = c("Before" = "#FF7F0E", "After" = "#FF7F0E")) +
-  labs(x = "Period", y = "", title = "") +
+  labs(x = "Period", y = "", title = "", tag = "D") +
  # annotate("text", x = 2.8, y = max(plot_data$response)*1.2, 
   #         label = p_label, size = 2.5, hjust = 1) +  # Adds formatted p-value
   scale_y_continuous(limits = c(min(plot_data$response), max(plot_data$response)*1.2)) +  # Adjusted y-axis limits
@@ -553,7 +562,7 @@ m2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
 
 m2
 
-m <- ggpubr::ggarrange(m1, m2, widths = c(1.9,1))
+m <- ggpubr::ggarrange(m1, m2, widths = c(1.9,1), align = "hv")
 m
 
 
@@ -629,21 +638,23 @@ o2 <- ggplot(plot_data, aes(x = period, y = response, fill = period)) +
   #annotate("text", x = 2.8, y = max(plot_data$response)*1.2, 
    #        label = p_label, size = 2.5, hjust = 1) +  # Adds formatted p-value
   scale_y_continuous(limits = c(min(plot_data$response), max(plot_data$response)*1.2)) +  # Adjusted y-axis limits
-  labs(x = "Period", y = "", title = "") +
+  labs(x = "Period", y = "", title = "", tag = "B") +
   theme(legend.position = "none", plot.title = element_text(face = "bold"),
         axis.text.x = element_blank(),
         axis.title.x = element_blank())
 
 o2
 
-o <- ggpubr::ggarrange(o1, o2, widths = c(1.9,1))
+o <- ggpubr::ggarrange(o1, o2, widths = c(1.9,1), align = "hv")
 o
 
 
 
 #combine plots
 
-f <- gridExtra::grid.arrange(o,m,p, ncol=1) 
+f <- ggpubr::ggarrange(o, m, p, ncol = 1, align = "hv")
+f
+
 p_final <- gridExtra::grid.arrange(f, g0, ncol = 2, widths = c(1.15,1))
 
 p_final
@@ -651,8 +662,8 @@ p_final
 
 
 #save
-ggsave(p_final, filename = file.path(figdir, "Fig2_temporal_trendsv3.png"), 
-       width = 8.5, height = 5.5, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
+ggsave(p_final, filename = file.path(figdir, "Fig2_temporal_trendsv4.png"), 
+       width = 8.5, height = 5.7, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 
 
