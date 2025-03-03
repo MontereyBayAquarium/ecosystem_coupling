@@ -38,8 +38,8 @@ E_obs = exp( colMeans(mu_obs) + V_mu/2)
 sd_E = sqrt( (exp(V_mu) - 1)*exp(2*colMeans(mu_obs) + V_mu) )
 #
 # Set up Stan fitting --------------------------------------
-nsamples = 3000
-nburnin = 3000
+nsamples = 5000
+nburnin = 1000
 cores = detectCores()
 ncore = max(3,min(5,cores-2))
 Niter = round(nsamples/ncore)
@@ -54,7 +54,7 @@ parms = c("sig_D","sig_E","Ebar","Ebar_alt","pi","delta","mu",
 mod <- cmdstan_model(fitmodel)
 
 init_fun <- function() {list(sig_E=runif(K, .04, .06), 
-                             sig_L=runif(3, .2, .25), 
+                             sig_D=runif(3, .2, .25), 
                              mu = runif(K, .9*colMeans(mu_obs), 1.1*colMeans(mu_obs)) ) }
 #
 suppressMessages(
@@ -73,6 +73,29 @@ suppressMessages(
 )
 source(here::here("analyses","cmdstan_sumstats.r"))
 #
+################################################################################
+#Plot posteriors and diagnostics
+
+color_scheme_set("mix-viridis-orange-purple")
+mcmc_trace(mcmc_array,regex_pars=("sig_D"))
+mcmc_trace(mcmc_array,regex_pars=("sig_E"))
+#
+color_scheme_set("blue")
+mcmc_areas(mcmc, pars= paste0("Ebar[",seq(1,N),"]"),
+           area_method="equal height",
+           prob = 0.8) + scale_y_discrete(labels=as.character(Years)) + labs(x="Energy gain")
+
+
+# Compute diagnostics
+summary_stats <- summarize_draws(mcmc)
+
+# R-hat Distribution
+rhat_plot <- mcmc_rhat(summary_stats$rhat) +
+  ggtitle("R-hat Convergence")
+
+# Effective Sample Size (ESS)
+ess_plot <- mcmc_neff(summary_stats$ess_bulk) +
+  ggtitle("Effective Sample Size")
 
 ################################################################################
 #Plot Figure 4 - proportion foraging effort
@@ -148,29 +171,6 @@ p
 #ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"), 
  #     width =5, height = 3, units = "in", dpi = 600, bg = "white")
 
-################################################################################
-#Plot posteriors and diagnostics
-
-color_scheme_set("mix-viridis-orange-purple")
-mcmc_trace(mcmc_array,regex_pars=("sig_D"))
-mcmc_trace(mcmc_array,regex_pars=("sig_E"))
-#
-color_scheme_set("blue")
-mcmc_areas(mcmc, pars= paste0("Ebar[",seq(1,N),"]"),
-           area_method="equal height",
-           prob = 0.8) + scale_y_discrete(labels=as.character(Years)) + labs(x="Energy gain")
-
-
-# Compute diagnostics
-summary_stats <- summarize_draws(mcmc)
-
-# R-hat Distribution
-rhat_plot <- mcmc_rhat(summary_stats$rhat) +
-  ggtitle("R-hat Convergence")
-
-# Effective Sample Size (ESS)
-ess_plot <- mcmc_neff(summary_stats$ess_bulk) +
-  ggtitle("Effective Sample Size")
 
 ################################################################################
 #FigS2 Estimated trends in prey encounter rates

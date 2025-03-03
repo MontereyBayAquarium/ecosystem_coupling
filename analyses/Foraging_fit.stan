@@ -27,7 +27,7 @@ parameters {
   vector[K] log_G ;                // mean log Caloric intake per item of prey consumed for prey type i  
   vector<lower=0>[K] mu ;          // mean log rate of energy return during dives allocated to foraging on prey type i  
   vector<lower=0>[K] sig_E;        // sd in log rate of energy return 
-  vector<lower=0>[3] sig_D ;       // year-to-year variation in relative abundance of prey (urchins, musseles, all other taxa) 
+  vector<lower=0>[3] sig_D;        // year-to-year variation in relative abundance of prey (urchins, musseles, all other taxa) 
   matrix[N,K] D ;                  // log relative abundance of prey types by year (log-instantaneous encounter rates)   
 }
 //
@@ -69,12 +69,12 @@ model {
   // Priors:
   log_G ~ normal(log_G_pri[1],log_G_pri[2]) ;
   mu ~ cauchy(0,1) ;
-  sig_E ~ cauchy(0,.1) ;  
-  sig_D ~ cauchy(0,.1) ;
+  sig_E ~ cauchy(0,.05) ;  
+  sig_D ~ cauchy(0,.05) ;
   // Auto-regressive model (AR[1]) describing log instantaneous prey patch encounter rates over time
   for(i in 1:(K-1)){
     int j = i < 3 ? i : 3 ;
-    D[1,i] ~ normal(-2.5, 2.5) ;
+    D[1,i] ~ normal(-2.5, 5) ;
     D[2:N,i] ~ normal( D[1:(N-1),i], sig_D[j]) ;
   }  
   D[1:N,K] ~ normal(0,.05) ; // "other" prey category assumed to remain constant  
