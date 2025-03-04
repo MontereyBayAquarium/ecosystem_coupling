@@ -123,6 +123,26 @@ df_diet = rbind(df_diet,
                 ))
 
 
+#Calculate pre/post means for mussels
+standard_error <- function(x) {
+  sd(x, na.rm = TRUE) / sqrt(sum(!is.na(x)))  # sd / sqrt(n), handling NA values
+}
+
+# Filter mussel data
+df_mussels <- df_diet[df_diet$Prey_type == "mussels", ]
+
+# Compute statistics
+pre_2013_mean <- mean(df_mussels$eta[df_mussels$Year < 2013], na.rm = TRUE)
+pre_2013_se <- standard_error(df_mussels$eta[df_mussels$Year < 2013])
+
+post_2013_mean <- mean(df_mussels$eta[df_mussels$Year >= 2013], na.rm = TRUE)
+post_2013_se <- standard_error(df_mussels$eta[df_mussels$Year >= 2013])
+
+# Print results
+cat("Mussel Foraging Effort (Pre-2013):", pre_2013_mean, "±", pre_2013_se, "\n")
+cat("Mussel Foraging Effort (Post-2013):", post_2013_mean, "±", post_2013_se, "\n")
+
+
 base_theme <-  theme(axis.text=element_text(size=8, color = "black"),
                      axis.title=element_text(size=9,color = "black"),
                      plot.tag=element_text(size=8,color = "black"),
@@ -170,6 +190,8 @@ p
 
 #ggsave(p, filename = file.path(figdir, "Fig4_proportion_effort.png"), 
  #     width =5, height = 3, units = "in", dpi = 600, bg = "white")
+
+
 
 
 ################################################################################
