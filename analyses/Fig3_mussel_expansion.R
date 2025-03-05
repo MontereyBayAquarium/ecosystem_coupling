@@ -161,8 +161,8 @@ scheme1 <- ggplot(arrow_data, aes(x = x, y = y)) +
   geom_segment(aes(xend = x, y = 0.87, yend = y - 0.15),
                arrow = arrow(type = "closed", length = unit(0.1, "inches")),
                size = 1) +
-  labs(x = NULL, y = NULL) +  # Remove axis labels
-  theme_void() +  # Remove axis lines and ticks
+  labs(x = NULL, y = NULL) +  
+  theme_void() +  
   annotate("text", x = 0.5, y = 0.92, label = "High", hjust = 0.5, vjust=8, size = 4) +
   annotate("text", x = 0.5, y = 0.68, label = "Low", hjust = 0.5, vjust=-2, size = 4)+
   theme(plot.margin = margin(0, 1, 0, 0, "cm")) #reduce left margin
@@ -205,10 +205,9 @@ my_theme <-  theme(axis.text=element_text(size=10,color = "black"),
                    strip.text = element_text(size=8, face = "bold",color = "black", hjust=0),
                    strip.background = element_blank())
 
-# Convert size_bin to numeric safely
 DatU <- DatU %>%
   mutate(size_bin = as.numeric(as.character(size_bin))) %>%
-  filter(!is.na(size_bin))  # Remove NAs before plotting
+  filter(!is.na(size_bin))  
 
 
 g2 <- ggplot(DatU, aes(x = size_bin, fill = ssw_period, color = ssw_period)) +
@@ -223,13 +222,12 @@ g2 <- ggplot(DatU, aes(x = size_bin, fill = ssw_period, color = ssw_period)) +
                position = position_nudge(y = -0.965)) +  
   labs(x = "Size \n(mm)", y = "", title = "Size frequency", tag = "C") +
   scale_x_continuous(limits = c(0, 100), breaks = seq(0, 120, by = 20)) +
-  scale_y_continuous(breaks = NULL) +  # Remove y-axis labels
+  scale_y_continuous(breaks = NULL) +  
   scale_fill_manual(values=c("indianred","navyblue")) +
   scale_color_manual(values=c("indianred","navyblue")) +
   theme_bw() + my_theme + theme(axis.title.y = element_blank())
 
 g2
-
 
 
 
@@ -283,8 +281,8 @@ n <- gridExtra::grid.arrange(g1_full, m, nrow=2, heights = c(0.65,0.25))
 n
 
 
-ggsave(n, filename = file.path(figdir, "Fig3_mussel_expansion3.png"), 
-      width = 7, height = 7.5, units = "in", dpi = 600) #last write 26 Sept 2024
+#ggsave(n, filename = file.path(figdir, "Fig3_mussel_expansion3.png"), 
+ #     width = 7, height = 7.5, units = "in", dpi = 600) #last write 26 Sept 2024
 
 
 
