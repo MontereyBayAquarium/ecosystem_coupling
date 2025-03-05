@@ -8,7 +8,6 @@ librarian::shelf(tidyverse, sf, zoo, minpack.lm, ggsignif)
 
 #set directories 
 localdir <- here::here("output")
-remdir <- "/Volumes/seaotterdb$/kelp_recovery/data/" #note: this path is to a MBA server
 figdir <- here::here("figures")
 
 #read census data
@@ -19,12 +18,6 @@ load(file.path(localdir, "processed/rocky_intertidal/pisaster_mytilus_processed.
 
 #read foraging data
 forage_orig <- read_csv(file.path(localdir,"processed/foraging_data/foraging_data_2016_2023.csv"))
-
-#read bathy
-#Note: this file is too large for GitHub and is currently stored on a MBA server. 
-#authorized users can access the server, or the data can be obtained directly from
-#https://geodata.mit.edu/catalog/stanford-pb497kd3664
-#bathy_5m <- st_read(file.path(remdir, "gis_data/raw/bathymetry/contours_5m/contours_5m.shp")) %>% filter(CONTOUR == "-5")
 
 #read state
 ca_counties_orig <- st_read(file.path(localdir, "raw/gis_data/ca_county_boundaries/s7vc7n.shp")) 
@@ -171,8 +164,8 @@ g <- ggplot() +
   ) + 
   guides(
     fill = guide_legend(
-      override.aes = list(size = 3),  # Adjust the legend point size as needed
-      title = NULL  # Remove the legend title
+      override.aes = list(size = 3),  
+      title = NULL  
     )
   ) + 
   # Add land
@@ -211,14 +204,13 @@ g <- ggplot() +
     legend.position=c(.8,.2),
     legend.background = element_rect(fill='transparent'),
     legend.key = element_rect(fill='transparent'),
-    #axis.text.x = element_text(angle = 90, vjust = 0.5),  # Rotate x-axis labels and center them
-    axis.text.y = element_text(angle = 90, hjust = 0.5),  # Rotate y-axis labels and center them
-    axis.ticks.x = element_line(),  # Show ticks for x-axis
-    axis.ticks.y = element_line()   # Show ticks for y-axis
+    #axis.text.x = element_text(angle = 90, vjust = 0.5),  
+    axis.text.y = element_text(angle = 90, hjust = 0.5),  
+    axis.ticks.x = element_line(),  
+    axis.ticks.y = element_line()  
   ) + 
-  # Manually set breaks for every other tick mark on the x-axis
-  scale_x_continuous(breaks = seq(-121.98, -121.88, by = 0.03)) +  # Adjust for your x-axis range
-  scale_y_continuous(breaks = seq(36.515, 36.645, by = 0.03))+  # Adjust for your y-axis range
+  scale_x_continuous(breaks = seq(-121.98, -121.88, by = 0.03)) + 
+  scale_y_continuous(breaks = seq(36.515, 36.645, by = 0.03))+ 
   theme(      
     #toy with plot margin to align with other panels
     plot.margin = unit(c(5.5, 5.5, 7, 5.5), "pt"))
@@ -662,8 +654,8 @@ p_final
 
 
 #save
-ggsave(p_final, filename = file.path(figdir, "Fig2_temporal_trendsv4.png"), 
-       width = 8.5, height = 5.7, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
+#ggsave(p_final, filename = file.path(figdir, "Fig2_temporal_trendsv4.png"), 
+ #      width = 8.5, height = 5.7, units = "in", dpi = 600, bg = "white") #last write 26 Sept 2024
 
 
 
