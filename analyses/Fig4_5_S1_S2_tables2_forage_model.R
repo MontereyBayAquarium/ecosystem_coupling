@@ -1,8 +1,15 @@
 
-rm(list=ls())
+#jossmith@mbayaq.org
+
+################################################################################
+
+#this is the script used to generate figures 4, 5, S1, and S2, and table 2. The
+#code below is used to generate a hierarchical bayesian optimal foraging model.
 
 ################################################################################
 #Prep workspace
+
+rm(list=ls())
 
 #install.packages("dirichlet", repos="http://R-Forge.R-project.org")
 librarian::shelf(dplyr, parallel, cmdstanr, posterior, gtools, ggplot2, bayesplot,
