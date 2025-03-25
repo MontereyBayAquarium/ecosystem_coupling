@@ -12,7 +12,8 @@
 
 rm(list=ls())
 
-librarian::shelf(tidyverse,here, janitor)
+require(librarian)
+librarian::shelf(tidyverse,here, janitor, here)
 
 #set paths
 datin <- here::here("output","raw")

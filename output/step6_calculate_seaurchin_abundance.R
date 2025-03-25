@@ -3,6 +3,8 @@
 #August 1, 2024
 
 rm(list=ls())
+
+require(librarian)
 librarian::shelf(tidyverse, here)
 
 
@@ -34,7 +36,7 @@ site_table <- read.csv(file.path(basedir, "MLPA_kelpforest_site_table.6.csv")) %
                 baseline_region)%>%
   distinct() #remove duplicates
 
-mus_dat <- load(file = file.path("output/processed/rocky_intertidal/pisaster_mytilus_processed2.rdata"))
+mus_dat <- load(file = file.path("output/processed/rocky_intertidal/pisaster_mytilus_processed.rdata"))
 
 
 ################################################################################
@@ -166,8 +168,8 @@ ggplot(mus_build, aes(x = year, y = mean_cov)) +
 #export summarized data
 
 #write_csv(kelp_swath_build8, file = file.path(output, "urchin_site_level_abundances.csv")) #last write 01 August 2024
-write_csv(kelp_swath_build9, file = file.path(output, "urchin_annual_density.csv")) #last write 09 August 2024
-write_csv(mus_build, file = file.path(output, "mus_annual_cov.csv")) #last write 09 August 2024
+#write_csv(kelp_swath_build9, file = file.path(output, "urchin_annual_density.csv")) #last write 09 August 2024
+#write_csv(mus_build, file = file.path(output, "mus_annual_cov.csv")) #last write 09 August 2024
 
 
 

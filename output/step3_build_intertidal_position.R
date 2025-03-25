@@ -8,7 +8,8 @@ rm(list=ls())
 
 ######
 #required packages
-librarian::shelf(tidyverse, sf, janitor)
+require(librarian)
+librarian::shelf(tidyverse, sf, janitor, here)
 
 #set directories 
 localdir <- here::here("output")
@@ -60,8 +61,8 @@ mus_elev <- mus_el %>% filter(latitude >= 36.47986 & latitude <= 36.64640) %>%
 
 ################################################################################
 #export
-save(mus_pos_build1, mus_size_build1, mus_cov_period, mus_elev, file = 
-       file.path(localdir, "processed/rocky_intertidal/position_data.rdata")) #last write 26 Sept 2024
+#save(mus_pos_build1, mus_size_build1, mus_cov_period, mus_elev, file = 
+ #      file.path(localdir, "processed/rocky_intertidal/position_data.rdata")) #last write 26 Sept 2024
 
 
 

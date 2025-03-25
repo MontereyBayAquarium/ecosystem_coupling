@@ -3,6 +3,8 @@
 #August 1, 2024
 
 rm(list=ls())
+
+require(librarian)
 librarian::shelf(tidyverse, here)
 
 
@@ -67,7 +69,7 @@ kelp_swath_build1 <- kelp_swath_raw %>%
 ################################################################################
 #export summarized data
 
-write_csv(kelp_swath_build1, file = file.path(output, "urchin_sizefq.csv")) #last write 01 August 2024
+#write_csv(kelp_swath_build1, file = file.path(output, "urchin_sizefq.csv")) #last write 01 August 2024
 
 
 

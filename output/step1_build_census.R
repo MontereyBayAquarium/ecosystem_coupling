@@ -8,7 +8,8 @@ rm(list=ls())
 
 ######
 #required packages
-librarian::shelf(tidyverse,sf, janitor)
+require(librarian)
+librarian::shelf(tidyverse,sf, janitor, here)
 
 #set directories 
 basedir <- here::here("output")
@@ -112,7 +113,7 @@ g
 ################################################################################
 #Step 3 - export
 
-write.csv(census_build1, file = file.path(basedir, "processed/census/census_data_processed.csv")) #last write 26 September 2024
+#write.csv(census_build1, file = file.path(basedir, "processed/census/census_data_processed.csv")) #last write 26 September 2024
 
 
 
