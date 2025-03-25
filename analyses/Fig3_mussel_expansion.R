@@ -1,8 +1,20 @@
 #Joshua G. Smith; jossmith@mbayaq.org
 
+
+################################################################################
+
+#this is the script used to generate figure 3, which depicts the spatial 
+#distribution of mussels at four rocky intertidal sites. Statistical tests are
+#performed at the end of each chunk to test for differences in the distribution
+#of mussel depth, size, and cover before vs. after the 2013 sea star wasting 
+#event.
+
+################################################################################
+
 rm(list=ls())
 
 #required packages
+require(librarian)
 librarian::shelf(tidyverse, here)
 
 #set directories 

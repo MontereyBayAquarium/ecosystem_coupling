@@ -1,10 +1,20 @@
 
 #Joshua G. Smith; jossmith@mbayaq.org
 
+################################################################################
+
+#this is the script used to generate figure 2, which includes a site map,
+#the spatial locations of sea otter foraging observations, and temporal trends
+#for sea otters, mussels, and pisaster. Statistical tests are performed at the
+#beginning of each plot chunk. 
+
+################################################################################
+
 rm(list=ls())
 
 #required packages
-librarian::shelf(tidyverse, sf, zoo, minpack.lm, ggsignif)
+require(librarian)
+librarian::shelf(tidyverse, sf, zoo, minpack.lm, ggsignif, rnaturalearth)
 
 #set directories 
 localdir <- here::here("output")
