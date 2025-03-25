@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/716246346.svg)](https://doi.org/10.5281/zenodo.15084593)
+
 # ecosystem_coupling
 This is the GitHub repository for a project led by Monterey Bay Aquarium aimed at understanding coupling between the rocky intertidal and subtidal. 
 The analyses and code in this respository support the findings presented in Smith et al. 2024
